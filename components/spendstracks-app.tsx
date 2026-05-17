@@ -65,16 +65,22 @@ const navItems = [
 ];
 
 const chartData = [
-  { name: "Food", value: 42, color: "#0f8f72" },
-  { name: "Bills", value: 26, color: "#ff6b5f" },
-  { name: "Travel", value: 16, color: "#64a7ff" },
-  { name: "Shopping", value: 16, color: "#f4b740" }
+  { name: "Food & Dining", value: 28, color: "#0f8f72" },
+  { name: "Shopping", value: 18, color: "#f4b740" },
+  { name: "Transport", value: 15, color: "#64a7ff" },
+  { name: "Bills", value: 14, color: "#ff6b5f" },
+  { name: "Entertainment", value: 10, color: "#7766e8" },
+  { name: "Health & Fitness", value: 8, color: "#10b889" },
+  { name: "Groceries", value: 7, color: "#f97316" }
 ];
 
 const budgets = [
   { name: "Food & Dining", spent: "₹31,000", limit: "₹40,000", progress: 78 },
+  { name: "Shopping", spent: "₹19,500", limit: "₹25,000", progress: 72 },
   { name: "Transport", spent: "₹10,500", limit: "₹17,500", progress: 60 },
-  { name: "Shopping", spent: "₹19,500", limit: "₹25,000", progress: 72 }
+  { name: "Bills", spent: "₹15,000", limit: "₹20,000", progress: 75 },
+  { name: "Entertainment", spent: "₹8,000", limit: "₹12,000", progress: 67 },
+  { name: "Health & Fitness", spent: "₹5,500", limit: "₹10,000", progress: 55 }
 ];
 
 const screenAnimation = {
@@ -142,12 +148,35 @@ export function SpendsTracksApp() {
       food: "F",
       shopping: "S",
       transport: "T",
-      bills: "B"
+      bills: "B",
+      entertainment: "E",
+      health: "H",
+      education: "U",
+      groceries: "G",
+      travel: "T",
+      salary: "P",
+      investment: "I",
+      other: "O"
+    };
+    const getCategoryTitle = (cat: string) => {
+      const titles: Record<string, string> = {
+        food: "Food & Dining",
+        shopping: "Shopping",
+        transport: "Transport",
+        bills: "Bills",
+        entertainment: "Entertainment",
+        health: "Health & Fitness",
+        education: "Education",
+        groceries: "Groceries",
+        travel: "Travel",
+        salary: "Salary",
+        investment: "Investment",
+        other: "Other"
+      };
+      return titles[cat] || cat;
     };
     const newExpense: Transaction = {
-      title: expense.category === "food" ? "Food & Dining" : 
-             expense.category === "shopping" ? "Shopping" :
-             expense.category === "transport" ? "Transport" : "Bills",
+      title: getCategoryTitle(expense.category),
       detail: expense.notes || expense.category,
       amount: `-₹${Number(expense.amount).toLocaleString("en-IN")}`,
       tone: "expense",
@@ -524,7 +553,7 @@ function AddExpenseScreen({ onNavigate, onSaveExpense }: { onNavigate: (screen: 
               />
             </Field>
             <Field label="Category">
-              <Select name="category" defaultValue="food" required>
+              <Select name="category" required>
                 <SelectTrigger aria-label="Select category" className="dark:bg-background">
                   <SelectValue placeholder="Choose category" />
                 </SelectTrigger>
@@ -533,6 +562,14 @@ function AddExpenseScreen({ onNavigate, onSaveExpense }: { onNavigate: (screen: 
                   <SelectItem value="shopping">Shopping</SelectItem>
                   <SelectItem value="transport">Transport</SelectItem>
                   <SelectItem value="bills">Bills</SelectItem>
+                  <SelectItem value="entertainment">Entertainment</SelectItem>
+                  <SelectItem value="health">Health & Fitness</SelectItem>
+                  <SelectItem value="education">Education</SelectItem>
+                  <SelectItem value="groceries">Groceries</SelectItem>
+                  <SelectItem value="travel">Travel</SelectItem>
+                  <SelectItem value="salary">Salary</SelectItem>
+                  <SelectItem value="investment">Investment</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>
             </Field>
@@ -663,90 +700,85 @@ function AnalyticsScreen({ onNavigate, transactions }: { onNavigate: (screen: Sc
 
   return (
     <PhoneFrame label="Analytics screen" className="pb-28">
-      <ScreenHeader eyebrow="Insights" title="Analytics" />
+      <div className="h-full overflow-y-auto -mx-2 px-2">
+        <ScreenHeader eyebrow="Insights" title="Analytics" />
 
-      <Card className="mb-4 bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
-        <CardContent className="p-5">
-          <div className="h-52 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Tooltip
-                  cursor={false}
-                  contentStyle={{
-                    borderRadius: 14,
-                    border: "1px solid #e3e8df",
-                    boxShadow: "0 10px 28px rgb(26 46 39 / 0.08)"
-                  }}
-                />
-                <Pie
-                  data={chartData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={55}
-                  outerRadius={86}
-                  paddingAngle={3}
-                  dataKey="value"
-                >
-                  {chartData.map((entry) => (
-                    <Cell key={entry.name} fill={entry.color} />
-                  ))}
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="flex flex-wrap justify-center gap-3">
-            {chartData.slice(0, 3).map((item) => (
-              <span
-                key={item.name}
-                className="inline-flex items-center gap-2 text-xs font-extrabold text-muted-foreground"
-              >
-                <span
-                  className="size-2.5 rounded-full"
-                  style={{ backgroundColor: item.color }}
-                />
-                {item.name}
-              </span>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="mb-4 bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
-        <CardContent className="p-5">
-          <p className="text-sm font-extrabold text-muted-foreground dark:text-white/60">
-            Monthly Spending
-          </p>
-          <h3 className="mt-2 text-3xl font-extrabold dark:text-white">₹1,09,320</h3>
-          <ProgressBar value={68} className="mt-4" />
-          <p className="mt-2 text-xs font-semibold text-muted-foreground dark:text-white/50">
-            68% of planned budget used
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card className="bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
-        <CardContent className="p-4">
-          <SectionTitle title="Budget summary" />
-          <div className="grid gap-4">
-            {budgets.map((budget) => (
-              <div key={budget.name}>
-                <div className="mb-2 flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-extrabold dark:text-white">{budget.name}</p>
-                    <p className="text-xs font-semibold text-muted-foreground dark:text-white/50">
-                      {budget.spent} of {budget.limit}
-                    </p>
-                  </div>
-                  <span className="text-xs font-extrabold text-primary dark:text-[#10b889]">
-                    {budget.progress}%
-                  </span>
+        <div className="space-y-3 pb-4">
+          <Card className="overflow-hidden border-0 bg-gradient-to-br from-primary/10 to-secondary/20 dark:from-primary/5 dark:to-secondary/10 shadow-soft">
+            <CardContent className="p-4">
+              <p className="text-xs font-extrabold text-primary dark:text-primary">Spending by Category</p>
+              <div className="mt-2 flex items-center gap-4">
+                <div className="h-28 w-28">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={chartData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={30}
+                        outerRadius={50}
+                        paddingAngle={2}
+                        dataKey="value"
+                      >
+                        {chartData.map((entry) => (
+                          <Cell key={entry.name} fill={entry.color} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
                 </div>
-                <ProgressBar value={budget.progress} compact />
+                <div className="flex-1 space-y-1.5">
+                  {chartData.slice(0, 4).map((item) => (
+                    <div key={item.name} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="size-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                        <span className="text-xs font-semibold dark:text-white/80">{item.name}</span>
+                      </div>
+                      <span className="text-xs font-extrabold text-primary">{item.value}%</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+
+          <Card className="border-l-4 border-l-primary bg-gradient-to-r from-white to-primary/5 dark:from-card dark:to-primary/10 shadow-soft">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-extrabold text-muted-foreground dark:text-white/60">Total Spent</p>
+                  <h3 className="mt-1 text-2xl font-extrabold dark:text-white">₹1,09,320</h3>
+                </div>
+                <div className="text-right">
+                  <span className="rounded-full bg-primary/20 px-2 py-1 text-xs font-extrabold text-primary">68%</span>
+                  <p className="mt-1 text-[10px] font-semibold text-muted-foreground dark:text-white/50">of ₹1.6L budget</p>
+                </div>
+              </div>
+              <ProgressBar value={68} className="mt-3" />
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
+            <CardContent className="p-3">
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-xs font-extrabold text-muted-foreground">Budget Breakdown</p>
+                <span className="text-[10px] font-semibold text-primary">This month</span>
+              </div>
+              <div className="space-y-2.5">
+                {budgets.slice(0, 4).map((budget) => (
+                  <div key={budget.name}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold dark:text-white">{budget.name}</span>
+                      <span className="text-xs font-extrabold text-muted-foreground dark:text-white/70">{budget.spent}</span>
+                    </div>
+                    <ProgressBar value={budget.progress} compact className="mt-1" />
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+        </Card>
+        </div>
+      </div>
 
       <BottomNav active="Insights" onNavigate={onNavigate} />
     </PhoneFrame>
