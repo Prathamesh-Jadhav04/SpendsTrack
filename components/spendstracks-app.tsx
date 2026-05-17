@@ -45,6 +45,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/components/theme-provider";
 
 type Transaction = {
   title: string;
@@ -226,7 +227,7 @@ function PhoneFrame({
   return (
     <motion.section
       aria-label={label}
-      className="mx-auto w-full max-w-[480px] rounded-[2.35rem] border-2 border-white/90 bg-white/60 p-3 shadow-fintech backdrop-blur"
+      className="mx-auto w-full max-w-[480px] rounded-[2.35rem] border-2 border-white/10 bg-black/80 p-3 shadow-2xl shadow-black/50 backdrop-blur dark:border-white/5 dark:bg-black/60"
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true, amount: 0.22 }}
@@ -235,7 +236,7 @@ function PhoneFrame({
     >
       <div
         className={cn(
-          "relative flex min-h-[850px] flex-col overflow-hidden rounded-[1.9rem] bg-gradient-to-b from-white to-[#f8faf4] p-6",
+          "relative flex min-h-[850px] flex-col overflow-hidden rounded-[1.9rem] bg-gradient-to-b from-white to-[#f8faf4] p-6 dark:from-[#0a0a0a] dark:to-[#050505]",
           className
         )}
       >
@@ -298,7 +299,7 @@ function BottomNav({ active, onNavigate }: { active: string; onNavigate: (screen
   };
 
   return (
-    <nav className="absolute inset-x-6 bottom-5 grid grid-cols-5 gap-1 rounded-[1.55rem] border border-border/80 bg-white/90 p-2.5 shadow-fintech backdrop-blur-xl" role="navigation" aria-label="Main navigation">
+    <nav className="absolute inset-x-6 bottom-5 grid grid-cols-5 gap-1 rounded-[1.55rem] border border-border/80 bg-white/90 p-2.5 shadow-fintech backdrop-blur-xl dark:border-white/5 dark:bg-black/70 dark:shadow-2xl dark:shadow-black/50" role="navigation" aria-label="Main navigation">
       {navItems.map((item) => {
         const Icon = item.icon;
 
@@ -326,7 +327,7 @@ function SplashScreen() {
   return (
     <PhoneFrame
       label="Splash screen"
-      className="items-center justify-center bg-gradient-to-br from-white via-[#edf8f1] to-[#f8f1e6] text-center"
+      className="items-center justify-center bg-gradient-to-br from-white via-[#edf8f1] to-[#f8f1e6] text-center dark:from-[#0a0a0a] dark:via-[#0f1412] dark:to-[#0a0a0a]"
     >
       <motion.div
         className="grid justify-items-center gap-4"
@@ -363,14 +364,14 @@ function LoginScreen({ onLogin, onGuestLogin }: { onLogin: (e: React.FormEvent) 
         </div>
       </div>
 
-      <Card className="mt-9 border-border/80 bg-white/85">
+      <Card className="mt-9 border-border/80 bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
         <CardContent className="grid gap-4 p-5">
           <form onSubmit={onLogin}>
             <Field label="Email">
               <div className="relative">
                 <Mail className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  className="pl-11"
+                  className="pl-11 dark:bg-background"
                   placeholder="you@example.com"
                   type="email"
                   required
@@ -383,7 +384,7 @@ function LoginScreen({ onLogin, onGuestLogin }: { onLogin: (e: React.FormEvent) 
               <div className="relative">
                 <LockKeyhole className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  className="pl-11"
+                  className="pl-11 dark:bg-background"
                   placeholder="Enter password"
                   type="password"
                   required
@@ -431,9 +432,9 @@ function DashboardScreen({ onNavigate, transactions }: { onNavigate: (screen: Sc
         }
       />
 
-      <Card className="mb-4 overflow-hidden border-0 bg-gradient-to-br from-primary to-[#0b6c59] text-white shadow-fintech">
+      <Card className="mb-4 overflow-hidden border-0 bg-gradient-to-br from-primary to-[#0b6c59] text-white shadow-fintech dark:from-[#10b889] dark:to-[#085544]">
         <CardContent className="p-5">
-          <p className="text-sm font-semibold text-white/75">Total Balance</p>
+          <p className="text-sm font-semibold text-white/75 dark:text-white/60">Total Balance</p>
           <h3 className="mt-2 text-[2.1rem] font-extrabold leading-none">
             ₹4,27,145
           </h3>
@@ -460,7 +461,7 @@ function DashboardScreen({ onNavigate, transactions }: { onNavigate: (screen: Sc
         />
       </div>
 
-      <Card className="bg-white/85">
+      <Card className="bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
         <CardContent className="p-4">
           <SectionTitle 
             title="Recent transactions" 
@@ -507,13 +508,13 @@ function AddExpenseScreen({ onNavigate, onSaveExpense }: { onNavigate: (screen: 
     <PhoneFrame label="Add expense screen" className="pb-28">
       <ScreenHeader eyebrow="New entry" title="Add Expense" />
 
-      <Card className="bg-white/85">
+      <Card className="bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
         <CardContent className="grid gap-4 p-5">
           <form onSubmit={handleAddExpense}>
             <Field label="Amount">
               <Input
                 name="amount"
-                className="h-16 text-3xl font-extrabold"
+                className="h-16 text-3xl font-extrabold dark:bg-background"
                 placeholder="₹0.00"
                 inputMode="decimal"
                 required
@@ -524,10 +525,10 @@ function AddExpenseScreen({ onNavigate, onSaveExpense }: { onNavigate: (screen: 
             </Field>
             <Field label="Category">
               <Select name="category" defaultValue="food" required>
-                <SelectTrigger aria-label="Select category">
+                <SelectTrigger aria-label="Select category" className="dark:bg-background">
                   <SelectValue placeholder="Choose category" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="dark:bg-card">
                   <SelectItem value="food">Food & Dining</SelectItem>
                   <SelectItem value="shopping">Shopping</SelectItem>
                   <SelectItem value="transport">Transport</SelectItem>
@@ -540,7 +541,7 @@ function AddExpenseScreen({ onNavigate, onSaveExpense }: { onNavigate: (screen: 
                 <CalendarDays className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   name="date"
-                  className="pl-11"
+                  className="pl-11 dark:bg-background"
                   type="date"
                   defaultValue={today}
                   required
@@ -555,6 +556,7 @@ function AddExpenseScreen({ onNavigate, onSaveExpense }: { onNavigate: (screen: 
                 placeholder="Optional note"
                 maxLength={500}
                 aria-label="Optional notes"
+                className="dark:bg-background"
               />
             </Field>
             <Button
@@ -600,7 +602,7 @@ function TransactionsScreen({
       <div className="relative mb-3">
         <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
-          className="bg-white pl-11 shadow-soft"
+          className="bg-white pl-11 shadow-soft dark:bg-card dark:border dark:border-white/10"
           placeholder="Search transactions"
           type="search"
           aria-label="Search transactions"
@@ -638,7 +640,7 @@ function TransactionsScreen({
         />
       </div>
 
-      <Card className="flex-1 bg-white/85">
+      <Card className="flex-1 bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
         <CardContent className="grid gap-3 p-4">
           {transactions.length > 0 ? (
             transactions.map((transaction, idx) => (
@@ -663,7 +665,7 @@ function AnalyticsScreen({ onNavigate, transactions }: { onNavigate: (screen: Sc
     <PhoneFrame label="Analytics screen" className="pb-28">
       <ScreenHeader eyebrow="Insights" title="Analytics" />
 
-      <Card className="mb-4 bg-white/85">
+      <Card className="mb-4 bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
         <CardContent className="p-5">
           <div className="h-52 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -709,20 +711,20 @@ function AnalyticsScreen({ onNavigate, transactions }: { onNavigate: (screen: Sc
         </CardContent>
       </Card>
 
-      <Card className="mb-4 bg-white/85">
+      <Card className="mb-4 bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
         <CardContent className="p-5">
-          <p className="text-sm font-extrabold text-muted-foreground">
+          <p className="text-sm font-extrabold text-muted-foreground dark:text-white/60">
             Monthly Spending
           </p>
-          <h3 className="mt-2 text-3xl font-extrabold">₹1,09,320</h3>
+          <h3 className="mt-2 text-3xl font-extrabold dark:text-white">₹1,09,320</h3>
           <ProgressBar value={68} className="mt-4" />
-          <p className="mt-2 text-xs font-semibold text-muted-foreground">
+          <p className="mt-2 text-xs font-semibold text-muted-foreground dark:text-white/50">
             68% of planned budget used
           </p>
         </CardContent>
       </Card>
 
-      <Card className="bg-white/85">
+      <Card className="bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
         <CardContent className="p-4">
           <SectionTitle title="Budget summary" />
           <div className="grid gap-4">
@@ -730,12 +732,12 @@ function AnalyticsScreen({ onNavigate, transactions }: { onNavigate: (screen: Sc
               <div key={budget.name}>
                 <div className="mb-2 flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-sm font-extrabold">{budget.name}</p>
-                    <p className="text-xs font-semibold text-muted-foreground">
+                    <p className="text-sm font-extrabold dark:text-white">{budget.name}</p>
+                    <p className="text-xs font-semibold text-muted-foreground dark:text-white/50">
                       {budget.spent} of {budget.limit}
                     </p>
                   </div>
-                  <span className="text-xs font-extrabold text-primary">
+                  <span className="text-xs font-extrabold text-primary dark:text-[#10b889]">
                     {budget.progress}%
                   </span>
                 </div>
@@ -752,13 +754,14 @@ function AnalyticsScreen({ onNavigate, transactions }: { onNavigate: (screen: Sc
 }
 
 function ProfileScreen({ onNavigate, onLogout }: { onNavigate: (screen: Screen) => void; onLogout: () => void }) {
-  const [darkMode, setDarkMode] = useState(false);
+  const { theme, toggleTheme } = useTheme();
+  const isDark = theme === "dark";
 
   return (
     <PhoneFrame label="Profile and settings screen" className="pb-28">
       <ScreenHeader eyebrow="Account" title="Profile" />
 
-      <Card className="mb-4 bg-white/85">
+      <Card className="mb-4 bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
         <CardContent className="flex items-center gap-4 p-5">
           <div className="grid size-16 place-items-center rounded-[1.35rem] bg-gradient-to-br from-[#7766e8] to-[#64a7ff] text-lg font-extrabold text-white shadow-soft">
             AP
@@ -772,13 +775,13 @@ function ProfileScreen({ onNavigate, onLogout }: { onNavigate: (screen: Screen) 
         </CardContent>
       </Card>
 
-      <Card className="bg-white/85">
-        <CardContent className="divide-y divide-border/80 p-2">
+      <Card className="bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
+        <CardContent className="divide-y divide-border/80 dark:divide-white/5 p-2">
           <SettingRow
             icon={<Moon className="size-5" />}
             title="Dark mode"
             detail="Adjust app appearance"
-            action={<Switch checked={darkMode} onCheckedChange={setDarkMode} aria-label="Dark mode" />}
+            action={<Switch checked={isDark} onCheckedChange={toggleTheme} aria-label="Dark mode" />}
           />
           <SettingRow
             icon={<CircleDollarSign className="size-5" />}
@@ -798,7 +801,7 @@ function ProfileScreen({ onNavigate, onLogout }: { onNavigate: (screen: Screen) 
       <Button
         variant="destructive"
         onClick={onLogout}
-        className="mt-5 h-[52px] w-full bg-[#fff0ee] text-[#b7473d] hover:bg-[#ffe2dd]"
+        className="mt-5 h-[52px] w-full bg-[#fff0ee] text-[#b7473d] hover:bg-[#ffe2dd] dark:bg-destructive/20 dark:text-destructive-foreground dark:hover:bg-destructive/30"
       >
         <LogOut className="size-4" />
         Logout
@@ -868,8 +871,8 @@ function StatCard({
       className={cn(
         "border-border/80 shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-fintech",
         tone === "income"
-          ? "bg-gradient-to-b from-white to-[#edf9f1]"
-          : "bg-gradient-to-b from-white to-[#fff0ee]"
+          ? "bg-gradient-to-b from-white to-[#edf9f1] dark:from-[#0f1a15] dark:to-[#0a1210]"
+          : "bg-gradient-to-b from-white to-[#fff0ee] dark:from-[#1a0f0e] dark:to-[#100a09]"
       )}
     >
       <CardContent className="p-4">
@@ -877,16 +880,16 @@ function StatCard({
           className={cn(
             "mb-3 grid size-10 place-items-center rounded-2xl",
             tone === "income"
-              ? "bg-secondary text-primary"
-              : "bg-[#fff0ee] text-[#c24940]"
+              ? "bg-secondary text-primary dark:bg-[#0f2920] dark:text-[#10b889]"
+              : "bg-[#fff0ee] text-[#c24940] dark:bg-[#1a0f0e] dark:text-[#ff6b5f]"
           )}
         >
           {icon}
         </div>
-        <p className="text-xs font-extrabold text-muted-foreground">{label}</p>
-        <strong className="mt-1 block text-xl font-extrabold">{value}</strong>
+        <p className="text-xs font-extrabold text-muted-foreground dark:text-white/50">{label}</p>
+        <strong className="mt-1 block text-xl font-extrabold dark:text-white">{value}</strong>
         {detail ? (
-          <span className="mt-1 block text-xs font-semibold text-muted-foreground">
+          <span className="mt-1 block text-xs font-semibold text-muted-foreground dark:text-white/40">
             {detail}
           </span>
         ) : null}

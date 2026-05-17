@@ -29,24 +29,24 @@
   }
 
   .dark {
-    --background: 154 22% 10%;
-    --foreground: 105 25% 96%;
-    --card: 154 18% 14%;
-    --card-foreground: 105 25% 96%;
-    --popover: 154 18% 14%;
-    --popover-foreground: 105 25% 96%;
+    --background: 0 0% 4%;
+    --foreground: 0 0% 90%;
+    --card: 0 0% 6%;
+    --card-foreground: 0 0% 90%;
+    --popover: 0 0% 6%;
+    --popover-foreground: 0 0% 90%;
     --primary: 164 71% 45%;
-    --primary-foreground: 154 22% 9%;
-    --secondary: 154 18% 20%;
-    --secondary-foreground: 105 25% 96%;
-    --muted: 154 18% 18%;
-    --muted-foreground: 105 10% 68%;
-    --accent: 34 72% 28%;
-    --accent-foreground: 105 25% 96%;
-    --destructive: 6 75% 58%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 154 14% 24%;
-    --input: 154 14% 24%;
+    --primary-foreground: 0 0% 5%;
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 0 0% 90%;
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 55%;
+    --accent: 0 0% 15%;
+    --accent-foreground: 0 0% 90%;
+    --destructive: 0 63% 45%;
+    --destructive-foreground: 0 0% 90%;
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
     --ring: 164 71% 45%;
   }
 
@@ -72,6 +72,13 @@
       radial-gradient(circle at top left, rgb(15 143 114 / 0.18), transparent 34rem),
       radial-gradient(circle at bottom right, rgb(255 107 95 / 0.12), transparent 30rem),
       linear-gradient(135deg, #f8faf4 0%, #edf5ef 52%, #f8f1e8 100%);
+  }
+
+  .dark .soft-page-bg {
+    background:
+      radial-gradient(circle at top left, rgb(16 184 137 / 0.06), transparent 34rem),
+      radial-gradient(circle at bottom right, rgb(255 107 95 / 0.04), transparent 30rem),
+      linear-gradient(180deg, #050505 0%, #0a0a0a 50%, #080808 100%);
   }
 
   .no-scrollbar {
