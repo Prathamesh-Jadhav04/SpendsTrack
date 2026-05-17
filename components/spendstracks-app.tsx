@@ -92,16 +92,27 @@ type Screen = "splash" | "login" | "dashboard" | "add-expense" | "transactions" 
 type FilterType = "all" | "expense" | "income";
 
 const initialTransactions: Transaction[] = [
-  { title: "Supermart", detail: "Groceries", amount: "-₹4,320", tone: "expense", icon: "S" },
-  { title: "Salary", detail: "Income", amount: "+₹1,22,500", tone: "income", icon: "P" },
-  { title: "Ride share", detail: "Transport", amount: "-₹940", tone: "travel", icon: "R" }
+  { title: "Zomato", detail: "Food & Dining", amount: "-₹1,250", tone: "food", icon: "Z" },
+  { title: "Salary", detail: "Monthly Salary", amount: "+₹85,000", tone: "income", icon: "S" },
+  { title: "Metro Card", detail: "Transport", amount: "-₹500", tone: "transport", icon: "M" },
+  { title: "Shopping", detail: "Clothes", amount: "-₹3,200", tone: "shopping", icon: "S" },
+  { title: "Electricity", detail: "Bills", amount: "-₹2,800", tone: "bills", icon: "E" },
+  { title: "Netflix", detail: "Entertainment", amount: "-₹649", tone: "entertainment", icon: "N" }
 ];
 
 const initialHistory: Transaction[] = [
-  { title: "Coffee House", detail: "Today, 8:20 AM", amount: "-₹460", tone: "expense", icon: "C" },
-  { title: "Freelance", detail: "Yesterday", amount: "+₹32,000", tone: "income", icon: "F" },
-  { title: "Metro Pass", detail: "Transport", amount: "-₹1,700", tone: "travel", icon: "M" },
-  { title: "Water Bill", detail: "Utilities", amount: "-₹2,445", tone: "bills", icon: "W" }
+  { title: "Swiggy", detail: "Today, 1:30 PM", amount: "-₹420", tone: "food", icon: "S" },
+  { title: "Salary", detail: "Today, 9:00 AM", amount: "+₹85,000", tone: "income", icon: "S" },
+  { title: "Uber", detail: "Yesterday, 8:45 PM", amount: "-₹380", tone: "transport", icon: "U" },
+  { title: "Myntra", detail: "Yesterday", amount: "-₹2,100", tone: "shopping", icon: "M" },
+  { title: "Gas Bill", detail: "2 days ago", amount: "-₹1,450", tone: "bills", icon: "G" },
+  { title: "Gym", detail: "3 days ago", amount: "-₹2,000", tone: "health", icon: "G" },
+  { title: "Amazon", detail: "4 days ago", amount: "-₹1,890", tone: "shopping", icon: "A" },
+  { title: "Movie", detail: "5 days ago", amount: "-₹450", tone: "entertainment", icon: "M" },
+  { title: "Freelance", detail: "Last week", amount: "+₹25,000", tone: "income", icon: "F" },
+  { title: "Grocery", detail: "Last week", amount: "-₹3,500", tone: "groceries", icon: "G" },
+  { title: "Flight", detail: "Last week", amount: "-₹8,500", tone: "travel", icon: "F" },
+  { title: "Course", detail: "2 weeks ago", amount: "-₹5,000", tone: "education", icon: "C" }
 ];
 
 export function SpendsTracksApp() {
@@ -265,7 +276,7 @@ function PhoneFrame({
     >
       <div
         className={cn(
-          "relative flex min-h-[850px] flex-col overflow-hidden rounded-[1.9rem] bg-gradient-to-b from-white to-[#f8faf4] p-6 dark:from-[#0a0a0a] dark:to-[#050505]",
+          "relative flex h-[850px] flex-col overflow-hidden rounded-[1.9rem] bg-gradient-to-b from-white to-[#f8faf4] p-6 dark:from-[#0a0a0a] dark:to-[#050505]",
           className
         )}
       >
@@ -359,20 +370,41 @@ function SplashScreen() {
       className="items-center justify-center bg-gradient-to-br from-white via-[#edf8f1] to-[#f8f1e6] text-center dark:from-[#0a0a0a] dark:via-[#0f1412] dark:to-[#0a0a0a]"
     >
       <motion.div
-        className="grid justify-items-center gap-4"
+        className="grid justify-items-center gap-6"
         initial={{ scale: 0.96, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.45, ease: "easeOut" }}
       >
-        <BrandMark />
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-normal">
+        <motion.div
+          animate={{ 
+            scale: [1, 1.1, 1],
+            rotate: [0, 5, -5, 0]
+          }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <BrandMark />
+        </motion.div>
+        <div className="space-y-2">
+          <h1 className="text-4xl font-extrabold tracking-normal bg-gradient-to-r from-primary to-[#0d9973] bg-clip-text text-transparent">
             SpendsTracks
           </h1>
-          <p className="mt-2 text-sm font-semibold text-muted-foreground">
-            Money clarity, made simple.
-          </p>
+          <p className="text-base font-semibold text-muted-foreground">Money clarity, made simple.</p>
         </div>
+        <motion.div 
+          className="flex gap-1.5"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+        >
+          {[0, 1, 2].map((i) => (
+            <motion.div
+              key={i}
+              className="h-2 w-2 rounded-full bg-primary"
+              animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
+              transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
+            />
+          ))}
+        </motion.div>
       </motion.div>
     </PhoneFrame>
   );
@@ -447,72 +479,98 @@ function LoginScreen({ onLogin, onGuestLogin }: { onLogin: (e: React.FormEvent) 
 }
 
 function DashboardScreen({ onNavigate, transactions }: { onNavigate: (screen: Screen) => void; transactions: Transaction[] }) {
-  const recentTransactions = transactions.slice(0, 3);
+  const recentTransactions = transactions.slice(0, 4);
+  
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return { time: "Good morning", emoji: "🌅" };
+    if (hour < 17) return { time: "Good afternoon", emoji: "☀️" };
+    return { time: "Good evening", emoji: "🌙" };
+  };
+  
+  const greeting = getGreeting();
   
   return (
     <PhoneFrame label="Dashboard screen" className="pb-28">
-      <ScreenHeader
-        eyebrow="Good morning"
-        title="Dashboard"
-        action={
-          <Button size="icon" variant="outline" aria-label="Wallet">
-            <WalletCards className="size-5 text-primary" />
+      <div className="h-full flex flex-col overflow-y-auto no-scrollbar smooth-scroll momentum-scroll">
+        <ScreenHeader
+          eyebrow={greeting.time}
+          title="Avery"
+          action={
+            <Button size="icon" variant="outline" aria-label="Wallet" className="rounded-2xl">
+              <WalletCards className="size-5 text-primary" />
+            </Button>
+          }
+        />
+
+        <div className="relative mb-4 overflow-hidden rounded-3xl border-0 bg-gradient-to-br from-primary via-[#0d9973] to-[#0b6c59] p-5 shadow-fintech dark:from-[#10b889] dark:via-[#0d9973] dark:to-[#085544]">
+          <div className="absolute -right-8 -top-8 size-32 rounded-full bg-white/10" />
+          <div className="absolute -bottom-4 -left-4 size-20 rounded-full bg-white/5" />
+          <div className="relative">
+            <p className="text-xs font-semibold text-white/70 dark:text-white/60">Total Balance</p>
+            <h3 className="mt-1 text-[2.4rem] font-extrabold leading-none tracking-tight text-white">
+              ₹4,27,145
+            </h3>
+            <div className="mt-3 flex items-center gap-2">
+              <Badge className="bg-white/20 text-white hover:bg-white/20 backdrop-blur-sm">
+                <TrendingUp className="mr-1 size-3" />
+                +12.4%
+              </Badge>
+              <span className="text-xs font-medium text-white/60">vs last month</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-4 grid grid-cols-2 gap-3">
+          <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-white to-[#edf9f1] p-4 shadow-soft dark:from-[#0f1a15] dark:to-[#0a1210] dark:border-white/5">
+            <div className="flex items-center justify-between">
+              <div className="grid size-9 place-items-center rounded-xl bg-secondary/50 text-primary dark:bg-[#0f2920]">
+                <TrendingUp className="size-4" />
+              </div>
+              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">+8%</span>
+            </div>
+            <p className="mt-3 text-xs font-semibold text-muted-foreground dark:text-white/50">Income</p>
+            <h4 className="text-lg font-extrabold dark:text-white">₹2,71,000</h4>
+          </div>
+          <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-white to-[#fff0ee] p-4 shadow-soft dark:from-[#1a0f0e] dark:to-[#100a09] dark:border-white/5">
+            <div className="flex items-center justify-between">
+              <div className="grid size-9 place-items-center rounded-xl bg-[#fff0ee] text-[#c24940] dark:bg-[#1a0f0e]">
+                <TrendingDown className="size-4" />
+              </div>
+              <span className="rounded-full bg-[#ff6b5f]/10 px-2 py-0.5 text-[10px] font-bold text-[#ff6b5f]">+5%</span>
+            </div>
+            <p className="mt-3 text-xs font-semibold text-muted-foreground dark:text-white/50">Expense</p>
+            <h4 className="text-lg font-extrabold dark:text-white">₹1,09,300</h4>
+          </div>
+        </div>
+
+        <div className="mb-4 flex gap-3">
+          <Button onClick={() => onNavigate("add-expense")} className="flex-1 rounded-2xl h-11 bg-gradient-to-r from-[#ff6b5f] to-[#ff995c] shadow-lg shadow-[#ff6b5f]/20 hover:shadow-xl hover:shadow-[#ff6b5f]/30">
+            <Plus className="mr-2 size-4" />
+            Add Expense
           </Button>
-        }
-      />
+          <Button variant="outline" onClick={() => onNavigate("add-expense")} className="flex-1 rounded-2xl h-11 border-primary/20 dark:border-white/10">
+            <Plus className="mr-2 size-4" />
+            Add Income
+          </Button>
+        </div>
 
-      <Card className="mb-4 overflow-hidden border-0 bg-gradient-to-br from-primary to-[#0b6c59] text-white shadow-fintech dark:from-[#10b889] dark:to-[#085544]">
-        <CardContent className="p-5">
-          <p className="text-sm font-semibold text-white/75 dark:text-white/60">Total Balance</p>
-          <h3 className="mt-2 text-[2.1rem] font-extrabold leading-none">
-            ₹4,27,145
-          </h3>
-          <Badge className="mt-4 bg-white/15 text-white hover:bg-white/15">
-            +12.4% from last month
-          </Badge>
-        </CardContent>
-      </Card>
-
-      <div className="mb-5 grid grid-cols-2 gap-3">
-        <StatCard
-          icon={<TrendingUp className="size-5" />}
-          label="Income"
-          value="₹2,71,000"
-          detail="This month"
-          tone="income"
-        />
-        <StatCard
-          icon={<TrendingDown className="size-5" />}
-          label="Expense"
-          value="₹1,09,300"
-          detail="This month"
-          tone="expense"
-        />
+        <Card className="bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
+          <CardContent className="p-4">
+            <SectionTitle 
+              title="Recent transactions" 
+              action="View all"
+              onAction={() => onNavigate("transactions")}
+            />
+            <div className="grid gap-2">
+              {recentTransactions.map((transaction, idx) => (
+                <TransactionRow key={`${transaction.title}-${idx}`} transaction={transaction} />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      <Card className="bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
-        <CardContent className="p-4">
-          <SectionTitle 
-            title="Recent transactions" 
-            action="View all"
-            onAction={() => onNavigate("transactions")}
-          />
-          <div className="grid gap-3">
-            {recentTransactions.map((transaction, idx) => (
-              <TransactionRow key={`${transaction.title}-${idx}`} transaction={transaction} />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Button
-        size="icon"
-        aria-label="Quick add expense"
-        onClick={() => onNavigate("add-expense")}
-        className="absolute bottom-[5.8rem] right-6 size-14 rounded-[1.25rem] bg-gradient-to-br from-[#ff6b5f] to-[#ff995c] shadow-[0_18px_28px_rgb(255_107_95_/_0.32)]"
-      >
-        <Plus className="size-6" />
-      </Button>
       <BottomNav active="Home" onNavigate={onNavigate} />
     </PhoneFrame>
   );
@@ -533,7 +591,7 @@ function AddExpenseScreen({ onNavigate, onSaveExpense }: { onNavigate: (screen: 
     });
   };
 
-  return (
+return (
     <PhoneFrame label="Add expense screen" className="pb-28">
       <ScreenHeader eyebrow="New entry" title="Add Expense" />
 
@@ -634,27 +692,28 @@ function TransactionsScreen({
 
   return (
     <PhoneFrame label="Transactions screen" className="pb-28">
-      <ScreenHeader eyebrow="Activity" title="Transactions" />
+      <div className="h-full flex flex-col overflow-y-auto no-scrollbar smooth-scroll momentum-scroll">
+        <ScreenHeader eyebrow="Activity" title="Transactions" />
 
-      <div className="relative mb-3">
-        <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          className="bg-white pl-11 shadow-soft dark:bg-card dark:border dark:border-white/10"
-          placeholder="Search transactions"
-          type="search"
-          aria-label="Search transactions"
-          value={searchQuery}
-          onChange={(e) => onSearchChange(e.target.value)}
-        />
-      </div>
+        <div className="relative mb-3">
+          <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            className="bg-white pl-11 shadow-soft dark:bg-card dark:border dark:border-white/10"
+            placeholder="Search transactions"
+            type="search"
+            aria-label="Search transactions"
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+          />
+        </div>
 
-      <div className="no-scrollbar mb-4 flex gap-2 overflow-x-auto">
-        {filters.map((f, index) => (
-          <Button
-            key={f.value}
-            size="sm"
-            variant={filter === f.value ? "default" : "secondary"}
-            className="shrink-0 rounded-full px-4"
+        <div className="no-scrollbar mb-4 flex gap-2 overflow-x-auto">
+          {filters.map((f, index) => (
+            <Button
+              key={f.value}
+              size="sm"
+              variant={filter === f.value ? "default" : "secondary"}
+              className="shrink-0 rounded-full px-4"
             onClick={() => onFilterChange(f.value)}
           >
             {f.label}
@@ -688,6 +747,7 @@ function TransactionsScreen({
           )}
         </CardContent>
       </Card>
+      </div>
 
       <BottomNav active="History" onNavigate={onNavigate} />
     </PhoneFrame>
@@ -700,10 +760,37 @@ function AnalyticsScreen({ onNavigate, transactions }: { onNavigate: (screen: Sc
 
   return (
     <PhoneFrame label="Analytics screen" className="pb-28">
-      <div className="h-full overflow-y-auto -mx-2 px-2">
+      <div className="h-full flex flex-col overflow-y-auto no-scrollbar smooth-scroll momentum-scroll px-1">
         <ScreenHeader eyebrow="Insights" title="Analytics" />
 
         <div className="space-y-3 pb-4">
+          <div className="grid grid-cols-3 gap-2">
+            <motion.div 
+              className="rounded-2xl bg-gradient-to-br from-[#dcfce7] to-[#bbf7d0] p-3 dark:from-[#0f1a15] dark:to-[#0a1210]"
+              whileHover={{ scale: 1.02 }}
+            >
+              <p className="text-[10px] font-semibold text-[#16a34a] dark:text-[#16a34a]">Income</p>
+              <p className="mt-1 text-lg font-extrabold text-[#16a34a] dark:text-white">₹1.7L</p>
+              <p className="text-[10px] font-medium text-[#16a34a]/70">+12%</p>
+            </motion.div>
+            <motion.div 
+              className="rounded-2xl bg-gradient-to-br from-[#fee2e2] to-[#fecaca] p-3 dark:from-[#1a0f0e] dark:to-[#100a09]"
+              whileHover={{ scale: 1.02 }}
+            >
+              <p className="text-[10px] font-semibold text-[#dc2626] dark:text-[#ff6b5f]">Expense</p>
+              <p className="mt-1 text-lg font-extrabold text-[#dc2626] dark:text-white">₹1.1L</p>
+              <p className="text-[10px] font-medium text-[#dc2626]/70">+8%</p>
+            </motion.div>
+            <motion.div 
+              className="rounded-2xl bg-gradient-to-br from-[#e0e7ff] to-[#c7d2fe] p-3 dark:from-[#1e1b4b] dark:to-[#0f0a2a]"
+              whileHover={{ scale: 1.02 }}
+            >
+              <p className="text-[10px] font-semibold text-[#4f46e5] dark:text-[#818cf8]">Savings</p>
+              <p className="mt-1 text-lg font-extrabold text-[#4f46e5] dark:text-white">₹58K</p>
+              <p className="text-[10px] font-medium text-[#4f46e5]/70">34%</p>
+            </motion.div>
+          </div>
+
           <Card className="overflow-hidden border-0 bg-gradient-to-br from-primary/10 to-secondary/20 dark:from-primary/5 dark:to-secondary/10 shadow-soft">
             <CardContent className="p-4">
               <p className="text-xs font-extrabold text-primary dark:text-primary">Spending by Category</p>
@@ -791,53 +878,93 @@ function ProfileScreen({ onNavigate, onLogout }: { onNavigate: (screen: Screen) 
 
   return (
     <PhoneFrame label="Profile and settings screen" className="pb-28">
-      <ScreenHeader eyebrow="Account" title="Profile" />
+      <div className="h-full flex flex-col overflow-y-auto no-scrollbar smooth-scroll momentum-scroll">
+        <ScreenHeader eyebrow="Account" title="Profile" />
 
-      <Card className="mb-4 bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
-        <CardContent className="flex items-center gap-4 p-5">
-          <div className="grid size-16 place-items-center rounded-[1.35rem] bg-gradient-to-br from-[#7766e8] to-[#64a7ff] text-lg font-extrabold text-white shadow-soft">
+        <motion.div 
+          className="mb-4 flex items-center gap-4 rounded-3xl bg-gradient-to-br from-[#7766e8] via-[#6366f1] to-[#4f46e5] p-5 shadow-lg shadow-purple-500/20"
+          whileHover={{ scale: 1.01 }}
+        >
+          <motion.div 
+            className="grid size-16 place-items-center rounded-2xl bg-white/20 text-xl font-extrabold text-white backdrop-blur-sm"
+            animate={{ scale: [1, 1.05, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
             AP
-          </div>
+          </motion.div>
           <div className="min-w-0">
-            <h3 className="truncate text-lg font-extrabold">Avery Parker</h3>
-            <p className="truncate text-sm font-semibold text-muted-foreground">
+            <h3 className="truncate text-lg font-extrabold text-white">Avery Parker</h3>
+            <p className="truncate text-sm font-medium text-white/80">
               avery@example.com
             </p>
+            <span className="mt-2 inline-flex items-center rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold text-white">
+              Premium Member
+            </span>
           </div>
-        </CardContent>
-      </Card>
+        </motion.div>
 
-      <Card className="bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
-        <CardContent className="divide-y divide-border/80 dark:divide-white/5 p-2">
-          <SettingRow
-            icon={<Moon className="size-5" />}
-            title="Dark mode"
-            detail="Adjust app appearance"
-            action={<Switch checked={isDark} onCheckedChange={toggleTheme} aria-label="Dark mode" />}
-          />
-          <SettingRow
-            icon={<CircleDollarSign className="size-5" />}
-            title="Monthly budget"
-            detail="₹1,60,000 active limit"
-            action={<Badge variant="secondary">₹1.6L</Badge>}
-          />
-          <SettingRow
-            icon={<Settings2 className="size-5" />}
-            title="Currency"
-            detail="Indian Rupee"
-            action={<Badge variant="muted">INR</Badge>}
-          />
-        </CardContent>
-      </Card>
+        <div className="mb-4 grid grid-cols-3 gap-2">
+          {[
+            { label: "Total Spent", value: "₹4.2L", color: "from-[#fee2e2] to-[#fecaca]" },
+            { label: "Transactions", value: "156", color: "from-[#e0e7ff] to-[#c7d2fe]" },
+            { label: "Categories", value: "12", color: "from-[#dcfce7] to-[#bbf7d0]" }
+          ].map((stat, i) => (
+            <div key={i} className={`rounded-2xl bg-gradient-to-br ${stat.color} p-3 dark:from-[#1a1a2e] dark:to-[#0a0a15]`}>
+              <p className="text-[10px] font-semibold text-muted-foreground dark:text-white/60">{stat.label}</p>
+              <p className="text-lg font-extrabold dark:text-white">{stat.value}</p>
+            </div>
+          ))}
+        </div>
 
-      <Button
-        variant="destructive"
-        onClick={onLogout}
-        className="mt-5 h-[52px] w-full bg-[#fff0ee] text-[#b7473d] hover:bg-[#ffe2dd] dark:bg-destructive/20 dark:text-destructive-foreground dark:hover:bg-destructive/30"
-      >
-        <LogOut className="size-4" />
-        Logout
-      </Button>
+        <Card className="bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
+          <CardContent className="divide-y divide-border/80 dark:divide-white/5 p-2">
+            <SettingRow
+              icon={<Moon className="size-5" />}
+              title="Dark mode"
+              detail="Adjust app appearance"
+              action={<Switch checked={isDark} onCheckedChange={toggleTheme} aria-label="Dark mode" />}
+            />
+            <SettingRow
+              icon={<CircleDollarSign className="size-5" />}
+              title="Monthly budget"
+              detail="₹1,60,000 active limit"
+              action={<Badge variant="secondary" className="bg-primary/10 text-primary">₹1.6L</Badge>}
+            />
+          <SettingRow
+              icon={<Settings2 className="size-5" />}
+              title="Currency"
+              detail="Indian Rupee"
+              action={<Badge variant="muted" className="bg-muted/50">INR</Badge>}
+            />
+            <SettingRow
+              icon={<Settings2 className="size-5" />}
+              title="Notifications"
+              detail="Push & email alerts"
+              action={<Switch aria-label="Notifications" defaultChecked />}
+            />
+            <SettingRow
+              icon={<Settings2 className="size-5" />}
+              title="Security"
+              detail="Biometric login"
+              action={<Switch aria-label="Security" defaultChecked />}
+            />
+          </CardContent>
+        </Card>
+
+        <motion.button
+          onClick={onLogout}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-[#fee2e2] bg-[#fef2f2] text-sm font-bold text-[#dc2626] transition-colors hover:bg-[#fee2e2] dark:border-[#7f1d1d] dark:bg-[#450a0a] dark:text-[#fca5a5] dark:hover:bg-[#7f1d1d]"
+        >
+          <LogOut className="size-4" />
+          Logout
+        </motion.button>
+        
+        <p className="mt-4 text-center text-xs font-medium text-muted-foreground">
+          SpendsTracks v1.0.0 • Made with ❤️
+        </p>
+      </div>
 
       <BottomNav active="Profile" onNavigate={onNavigate} />
     </PhoneFrame>
@@ -951,7 +1078,14 @@ function TransactionRow({
           transaction.tone === "income" && "bg-secondary text-primary",
           transaction.tone === "expense" && "bg-[#fff0ee] text-[#b7473d]",
           transaction.tone === "travel" && "bg-[#edf4ff] text-[#326ab5]",
-          transaction.tone === "bills" && "bg-[#fff7df] text-[#986a00]"
+          transaction.tone === "bills" && "bg-[#fff7df] text-[#986a00]",
+          transaction.tone === "food" && "bg-[#fff0ee] text-[#c24940]",
+          transaction.tone === "shopping" && "bg-[#fef3c7] text-[#d97706]",
+          transaction.tone === "transport" && "bg-[#e0e7ff] text-[#4f46e5]",
+          transaction.tone === "entertainment" && "bg-[#f3e8ff] text-[#9333ea]",
+          transaction.tone === "health" && "bg-[#dcfce7] text-[#16a34a]",
+          transaction.tone === "education" && "bg-[#dbeafe] text-[#2563eb]",
+          transaction.tone === "groceries" && "bg-[#fef9c3] text-[#ca8a04]"
         )}
       >
         {transaction.icon}

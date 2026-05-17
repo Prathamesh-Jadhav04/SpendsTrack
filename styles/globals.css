@@ -89,4 +89,30 @@
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
+
+  .smooth-scroll {
+    -webkit-overflow-scrolling: touch;
+    -webkit-scroll-snap-type: proximity;
+    scroll-behavior: smooth;
+    scroll-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .momentum-scroll {
+    -webkit-overflow-scrolling: momentum;
+    scroll-snap-type: y mandatory;
+    overscroll-behavior: contain;
+  }
+
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+
+  .gpu-accelerated {
+    transform: translate3d(0, 0, 0);
+    will-change: transform;
+    -webkit-transform: translate3d(0, 0, 0);
+  }
 }
