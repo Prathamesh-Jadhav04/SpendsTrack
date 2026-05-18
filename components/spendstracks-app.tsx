@@ -2152,13 +2152,33 @@ function DashboardScreen({ onNavigate, transactions, user, isAdmin, isLoading }:
               <CardContent className="p-4">
                 <SectionTitle 
                   title="Recent transactions" 
-                  action="View all"
+                  action={recentTransactions.length > 0 ? "View all" : undefined}
                   onAction={() => onNavigate("transactions")}
                 />
                 <div className="grid gap-2">
-                  {recentTransactions.map((transaction, idx) => (
-                    <TransactionRow key={`${transaction.title}-${idx}`} transaction={transaction} />
-                  ))}
+                  {recentTransactions.length > 0 ? (
+                    recentTransactions.map((transaction, idx) => (
+                      <TransactionRow key={`${transaction.title}-${idx}`} transaction={transaction} />
+                    ))
+                  ) : (
+                    <EmptyState
+                      icon={<ReceiptText className="size-7 text-primary" />}
+                      title="No transactions yet"
+                      message="Start tracking your expenses by adding your first transaction!"
+                      action={
+                        <div className="flex gap-3">
+                          <Button onClick={() => onNavigate("add-expense")} size="sm" className="rounded-xl bg-gradient-to-r from-[#ff6b5f] to-[#ff995c]">
+                            <TrendingDown className="mr-1.5 size-3.5" />
+                            Add Expense
+                          </Button>
+                          <Button variant="outline" onClick={() => onNavigate("add-income")} size="sm" className="rounded-xl">
+                            <TrendingUp className="mr-1.5 size-3.5" />
+                            Add Income
+                          </Button>
+                        </div>
+                      }
+                    />
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -2311,6 +2331,15 @@ function TransactionsScreen({
   onSearchChange: (q: string) => void;
   onTransactionClick?: (transaction: Transaction) => void;
 }) {
+  const [localQuery, setLocalQuery] = useState(searchQuery);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onSearchChange(localQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [localQuery, onSearchChange]);
+
   const filters: { label: string; value: FilterType }[] = [
     { label: "All", value: "all" },
     { label: "Expense", value: "expense" },
@@ -2332,8 +2361,8 @@ function TransactionsScreen({
             placeholder="Search transactions"
             type="search"
             aria-label="Search transactions"
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
+            value={localQuery}
+            onChange={(e) => setLocalQuery(e.target.value)}
           />
         </div>
 
@@ -2377,7 +2406,19 @@ function TransactionsScreen({
               />
             ))
           ) : (
-            <p className="text-center text-muted-foreground py-4">No transactions found</p>
+            <EmptyState
+              icon={<ReceiptText className="size-7 text-primary" />}
+              title={searchQuery ? "No results found" : "No transactions yet"}
+              message={searchQuery ? `No transactions matching "${searchQuery}"` : "Start tracking your expenses by adding your first transaction!"}
+              action={!searchQuery && (
+                <div className="flex gap-3">
+                  <Button onClick={() => onNavigate("add-expense")} size="sm" className="rounded-xl bg-gradient-to-r from-[#ff6b5f] to-[#ff995c]">
+                    <TrendingDown className="mr-1.5 size-3.5" />
+                    Add Expense
+                  </Button>
+                </div>
+              )}
+            />
           )}
         </CardContent>
       </Card>
@@ -2430,7 +2471,21 @@ function AnalyticsScreen({ onNavigate, transactions, monthlyBudget = 160000, onE
             </motion.div>
           </div>
 
-          {(() => {
+          {transactions.length === 0 ? (
+            <EmptyState
+              icon={<BarChart3 className="size-7 text-primary" />}
+              title="No data to analyze"
+              message="Add some transactions to see your spending insights and analytics!"
+              action={
+                <Button onClick={() => onNavigate("add-expense")} size="sm" className="rounded-xl bg-gradient-to-r from-[#ff6b5f] to-[#ff995c]">
+                  <TrendingDown className="mr-1.5 size-3.5" />
+                  Add Expense
+                </Button>
+              }
+            />
+          ) : (
+            <>
+              {(() => {
             const categoryData = transactions.filter(t => t.type === "expense").reduce((acc, t) => {
               acc[t.category] = (acc[t.category] || 0) + parseInt(t.amount.replace(/[^0-9]/g, ""));
               return acc;
@@ -2546,6 +2601,8 @@ function AnalyticsScreen({ onNavigate, transactions, monthlyBudget = 160000, onE
               <Tags className="size-4 mr-2" />Categories
             </Button>
           </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -3307,6 +3364,29 @@ function Field({
   );
 }
 
+function EmptyState({
+  icon,
+  title,
+  message,
+  action
+}: {
+  icon: React.ReactNode;
+  title: string;
+  message: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
+      <div className="mb-4 grid size-16 place-items-center rounded-full bg-gradient-to-br from-muted to-muted/50">
+        {icon}
+      </div>
+      <h3 className="mb-2 text-lg font-extrabold">{title}</h3>
+      <p className="mb-6 text-sm text-muted-foreground">{message}</p>
+      {action}
+    </div>
+  );
+}
+
 function SectionTitle({
   title,
   action,
@@ -3655,9 +3735,12 @@ function GoalsScreen({ onNavigate, goals, onAddGoal, onUpdateProgress, onDeleteG
         })}
 
         {goals.length === 0 && (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">No goals yet. Create one to start saving!</p>
-          </div>
+          <EmptyState
+            icon={<Target className="size-7 text-primary" />}
+            title="No goals yet"
+            message="Set a savings target to start achieving your dreams!"
+            action={<Button onClick={() => setShowAddModal(true)} className="rounded-xl">+ Create Goal</Button>}
+          />
         )}
       </div>
 
@@ -3758,9 +3841,12 @@ function RecurringScreen({ onNavigate, recurring, onAddRecurring, onDeleteRecurr
         ))}
 
         {recurring.length === 0 && (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">No recurring transactions yet.</p>
-          </div>
+          <EmptyState
+            icon={<RefreshCcw className="size-7 text-primary" />}
+            title="No recurring payments"
+            message="Never miss a bill! Set up recurring transactions for subscriptions and bills."
+            action={<Button onClick={() => setShowAddModal(true)} className="rounded-xl">+ Add Recurring</Button>}
+          />
         )}
       </div>
 
