@@ -50,6 +50,28 @@
     --ring: 164 71% 45%;
   }
 
+  .midnight {
+    --background: 222 15% 8%;
+    --foreground: 214 20% 96%;
+    --card: 217 14% 12%;
+    --card-foreground: 214 20% 96%;
+    --popover: 217 14% 12%;
+    --popover-foreground: 214 20% 96%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 222 15% 8%;
+    --secondary: 217 14% 16%;
+    --secondary-foreground: 214 20% 96%;
+    --muted: 217 14% 16%;
+    --muted-foreground: 215 16% 64%;
+    --accent: 217 14% 20%;
+    --accent-foreground: 214 20% 96%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 217 14% 18%;
+    --input: 217 14% 18%;
+    --ring: 217 91% 60%;
+  }
+
   * {
     @apply border-border;
   }
@@ -74,11 +96,127 @@
       linear-gradient(135deg, #f8faf4 0%, #edf5ef 52%, #f8f1e8 100%);
   }
 
-  .dark .soft-page-bg {
+.dark .soft-page-bg {
     background:
       radial-gradient(circle at top left, rgb(16 184 137 / 0.06), transparent 34rem),
       radial-gradient(circle at bottom right, rgb(255 107 95 / 0.04), transparent 30rem),
       linear-gradient(180deg, #050505 0%, #0a0a0a 50%, #080808 100%);
+  }
+
+  .midnight .soft-page-bg {
+    background:
+      radial-gradient(circle at 20% 20%, rgb(79 140 255 / 0.12) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgb(34 197 94 / 0.06) 0%, transparent 50%),
+      radial-gradient(circle at 50% 50%, rgb(79 140 255 / 0.04) 0%, transparent 70%),
+      linear-gradient(180deg, #0F1117 0%, #0a0c10 50%, #0F1117 100%);
+  }
+
+  .midnight {
+    --primary: 217 91% 60%;
+    --primary-foreground: 222 15% 8%;
+    --foreground: 214 20% 96%;
+    --muted-foreground: 215 16% 65%;
+    --card-foreground: 214 20% 96%;
+    --border: 217 14% 20%;
+    --input: 217 14% 20%;
+    --ring: 217 91% 60%;
+  }
+
+  .midnight .text-foreground {
+    color: rgb(214 20% 96%);
+  }
+
+  .midnight .text-muted-foreground,
+  .midnight .text-muted-foreground\/60,
+  .midnight .text-muted-foreground\/70,
+  .midnight .text-muted-foreground\/80 {
+    color: rgb(215 16% 65%);
+  }
+
+  .midnight .dark\:text-white\/50,
+  .midnight .dark\:text-white\/60,
+  .midnight .dark\:text-white\/70 {
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  .midnight .dark\:text-white\/40 {
+    color: rgba(255, 255, 255, 0.35);
+  }
+
+  .midnight .bg-white\/90,
+  .midnight .bg-white\/95 {
+    background-color: rgba(26, 29, 38, 0.95);
+  }
+
+  .midnight .dark\:bg-white\/10 {
+    background-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .midnight .dark\:bg-white\/5 {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+
+  .midnight .dark\:bg-white\/5 {
+    background-color: rgba(255, 255, 255, 0.06);
+  }
+
+  .midnight .bg-muted\/50,
+  .midnight .bg-muted {
+    background-color: rgb(217 14% 16%);
+  }
+
+  .midnight .dark\:bg-card {
+    background-color: rgb(26, 29, 38);
+  }
+
+  .midnight .dark\:border-white\/5,
+  .midnight .dark\:border-white\/10 {
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .midnight .border-border\/80 {
+    border-color: rgb(217 14% 18%);
+  }
+
+  .midnight .text-primary {
+    color: rgb(79 140 255);
+  }
+
+  .midnight .hover\:bg-primary\/5:hover {
+    background-color: rgba(79, 140, 255, 0.1);
+  }
+
+  .midnight .dark\:shadow-black\/30 {
+    --tw-shadow-color: rgba(0, 0, 0, 0.3);
+  }
+
+  .midnight .bg-white\/85,
+  .midnight .bg-white\/95 {
+    background-color: rgba(26, 29, 38, 0.95);
+  }
+
+  .midnight input,
+  .midnight .dark\:bg-background {
+    background-color: rgb(21 24 32);
+    border-color: rgb(217 14% 20%);
+    color: rgb(214 20% 96%);
+  }
+
+  .midnight input::placeholder {
+    color: rgb(215 16% 50%);
+  }
+
+  .midnight .bg-gradient-to-br {
+    --tw-gradient-from: #1A1D26;
+    --tw-gradient-to: rgb(79 140 255 / 0.05);
+  }
+
+  .midnight .from-white {
+    --tw-gradient-from: #1A1D26;
+  }
+
+  .midnight .to-primary\/5 {
+    --tw-gradient-to: rgb(79 140 255 / 0.08);
   }
 
   .no-scrollbar {
@@ -114,5 +252,16 @@
     transform: translate3d(0, 0, 0);
     will-change: transform;
     -webkit-transform: translate3d(0, 0, 0);
+  }
+
+  @keyframes gradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  .animate-gradient {
+    background-size: 200% auto;
+    animation: gradient 3s linear infinite;
   }
 }
