@@ -51,8 +51,7 @@ export function LoginScreen({ onLogin, onGuestLogin, onSignUpClick }: LoginScree
     if (!validateEmail(email)) {
       setEmailError("Please enter a valid email address");
       return;
-    }
-
+}
     setIsLoading(true);
     await new Promise((resolve) => setTimeout(resolve, 800));
     setIsLoading(false);

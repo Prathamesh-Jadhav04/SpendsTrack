@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import {
   Settings2,
@@ -18,8 +20,10 @@ import {
   Shield,
   Trash2,
   LogOut,
+  User,
+  Camera,
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -38,7 +42,7 @@ import {
 } from "@/components/shared";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/theme-provider";
-import type { Screen, User, ModalType } from "@/components/types";
+import type { Screen, User as UserType, ModalType, Transaction } from "@/components/types";
 
 interface ProfileScreenProps {
   onNavigate: (screen: Screen) => void;
@@ -46,7 +50,10 @@ interface ProfileScreenProps {
   monthlyBudget?: number;
   setMonthlyBudget?: (value: number) => void;
   onExport?: () => void;
-  user?: User | null;
+  user?: UserType | null;
+  transactions?: Transaction[];
+  transactionHistory?: Transaction[];
+  customCategories?: { type: string }[];
 }
 
 export function ProfileScreen({
@@ -56,6 +63,9 @@ export function ProfileScreen({
   setMonthlyBudget,
   onExport,
   user,
+  transactions = [],
+  transactionHistory = [],
+  customCategories = [],
 }: ProfileScreenProps) {
   const { theme, toggleTheme } = useTheme();
   const isDark = theme === "dark";
@@ -73,7 +83,6 @@ export function ProfileScreen({
     twoFactorAuth: true,
     language: "English (India)",
     currency: "INR",
-    monthlyBudget: "₹1,60,000",
   });
   const [passwordData, setPasswordData] = useState({
     current: "",
@@ -184,6 +193,31 @@ export function ProfileScreen({
     "₹5,00,000",
   ];
 
+  const totalExpense = transactionHistory
+    .filter((t) => t.type === "expense")
+    .reduce((sum, t) => sum + parseInt(t.amount.replace(/[^0-9]/g, "")), 0);
+  const totalTransactions = transactionHistory.length;
+  const totalCategories = new Set(transactionHistory.map((t) => t.category)).size + customCategories.length;
+
+  const formatLargeNumber = (num: number) => {
+    if (num >= 100000) return `₹${(num / 100000).toFixed(1)}L`;
+    if (num >= 1000) return `₹${(num / 1000).toFixed(1)}K`;
+    return `₹${num.toLocaleString("en-IN")}`;
+  };
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.08, delayChildren: 0.05 },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 16 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } },
+  };
+
   return (
     <PhoneFrame label="Profile and settings screen" className="pb-28">
       <div className="h-full flex flex-col overflow-y-auto no-scrollbar smooth-scroll momentum-scroll">
@@ -219,9 +253,12 @@ export function ProfileScreen({
                     {profileData.name.charAt(0).toUpperCase()}
                   </span>
                 </div>
-                <div className="absolute bottom-0 right-0 bg-primary text-white p-2 rounded-full">
-                  <Settings2 className="size-3" />
-                </div>
+                <motion.div
+                  className="absolute bottom-0 right-0 bg-primary text-white p-2 rounded-full"
+                  whileHover={{ scale: 1.1 }}
+                >
+                  <Camera className="size-3" />
+                </motion.div>
               </motion.div>
             </div>
             <div className="space-y-3">
@@ -232,7 +269,7 @@ export function ProfileScreen({
                 <Input
                   value={profileData.name}
                   onChange={(e) => handleInputChange("name", e.target.value)}
-                  className={cn("mt-1 font-semibold", formErrors.name && "border-red-500")}
+                  className={cn("mt-1 font-semibold input-glow", formErrors.name && "border-red-500")}
                   placeholder="Your name"
                 />
                 {formErrors.name && (
@@ -247,7 +284,7 @@ export function ProfileScreen({
                   value={profileData.email}
                   onChange={(e) => handleInputChange("email", e.target.value)}
                   type="email"
-                  className={cn("mt-1 font-semibold", formErrors.email && "border-red-500")}
+                  className={cn("mt-1 font-semibold input-glow", formErrors.email && "border-red-500")}
                   placeholder="your@email.com"
                 />
                 {formErrors.email && (
@@ -261,7 +298,7 @@ export function ProfileScreen({
                 <Input
                   value={profileData.phone}
                   onChange={(e) => handleInputChange("phone", e.target.value)}
-                  className="mt-1 font-semibold"
+                  className="mt-1 font-semibold input-glow"
                   placeholder="+91 98765 43210"
                 />
               </div>
@@ -272,7 +309,7 @@ export function ProfileScreen({
                 <Input
                   value={profileData.dob}
                   onChange={(e) => handleInputChange("dob", e.target.value)}
-                  className="mt-1 font-semibold"
+                  className="mt-1 font-semibold input-glow"
                   placeholder="DD/MM/YYYY"
                 />
               </div>
@@ -280,6 +317,8 @@ export function ProfileScreen({
           </motion.div>
         ) : (
           <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
             className="mb-4 flex items-center gap-4 rounded-3xl bg-gradient-to-br from-[#7766e8] via-[#6366f1] to-[#4f46e5] p-5 shadow-lg shadow-purple-500/20"
             whileHover={{ scale: 1.01 }}
           >
@@ -287,8 +326,7 @@ export function ProfileScreen({
               <motion.div
                 className="size-16 rounded-full bg-gradient-to-br from-white/30 to-white/10 backdrop-blur-sm flex items-center justify-center"
                 animate={{
-                  scale: [1, 1.05, 1],
-                  rotate: [0, 2, -2, 0],
+                  scale: [1, 1.03, 1],
                 }}
                 transition={{ duration: 3, repeat: Infinity }}
               >
@@ -324,242 +362,257 @@ export function ProfileScreen({
           </motion.div>
         )}
 
-        <div className="mb-4 grid grid-cols-3 gap-2">
-          {[
-            {
-              label: "Total Spent",
-              value: "₹4.2L",
-              emoji: "💰",
-              color: "from-[#fee2e2] to-[#fecaca]",
-            },
-            {
-              label: "Transactions",
-              value: "156",
-              emoji: "📊",
-              color: "from-[#e0e7ff] to-[#c7d2fe]",
-            },
-            {
-              label: "Categories",
-              value: "12",
-              emoji: "🏷️",
-              color: "from-[#dcfce7] to-[#bbf7d0]",
-            },
-          ].map((stat, i) => (
-            <motion.div
-              key={i}
-              className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${stat.color} p-3 dark:from-[#1a1a2e] dark:to-[#0a0a15]`}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="space-y-4"
+        >
+          <motion.div variants={itemVariants} className="grid grid-cols-3 gap-2">
+            {[
+              {
+                label: "Total Spent",
+                value: formatLargeNumber(totalExpense),
+                emoji: "💰",
+                color: "from-[#fee2e2] to-[#fecaca]",
+              },
+              {
+                label: "Transactions",
+                value: totalTransactions.toString(),
+                emoji: "📊",
+                color: "from-[#e0e7ff] to-[#c7d2fe]",
+              },
+              {
+                label: "Categories",
+                value: totalCategories.toString(),
+                emoji: "🏷️",
+                color: "from-[#dcfce7] to-[#bbf7d0]",
+              },
+            ].map((stat, i) => (
               <motion.div
-                className="absolute -right-2 -top-2 text-2xl"
-                animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.1, 1] }}
-                transition={{ duration: 2, repeat: Infinity, delay: i * 0.3 }}
+                key={i}
+                className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${stat.color} p-3 dark:from-[#1a1a2e] dark:to-[#0a0a15] card-hover`}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
-                {stat.emoji}
+                <motion.div
+                  className="absolute -right-2 -top-2 text-2xl"
+                  animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.1, 1] }}
+                  transition={{ duration: 2, repeat: Infinity, delay: i * 0.3 }}
+                >
+                  {stat.emoji}
+                </motion.div>
+                <p className="text-[10px] font-semibold text-muted-foreground dark:text-white/60">
+                  {stat.label}
+                </p>
+                <motion.p
+                  className="text-lg font-extrabold dark:text-white"
+                  animate={{ scale: [1, 1.03, 1] }}
+                  transition={{ duration: 2, repeat: Infinity, delay: i * 0.2 }}
+                >
+                  {stat.value}
+                </motion.p>
               </motion.div>
-              <p className="text-[10px] font-semibold text-muted-foreground dark:text-white/60">
-                {stat.label}
-              </p>
-              <motion.p
-                className="text-lg font-extrabold dark:text-white"
-                animate={{ scale: [1, 1.05, 1] }}
-                transition={{ duration: 2, repeat: Infinity, delay: i * 0.2 }}
-              >
-                {stat.value}
-              </motion.p>
-            </motion.div>
-          ))}
-        </div>
+            ))}
+          </motion.div>
 
-        <div className="space-y-4">
-          <Card className="bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
-            <CardContent className="p-3">
-              <p className="mb-2 text-xs font-extrabold text-muted-foreground px-2">
-                Account
-              </p>
-              <div className="divide-y divide-border/80 dark:divide-white/5">
-                <SettingRow
-                  icon={<Settings2 className="size-5" />}
-                  title="Personal Info"
-                  detail="Name, email, phone"
-                  action={<ChevronRight className="size-4 text-muted-foreground" />}
-                  onClick={() => setActiveModal("personalInfo")}
-                />
-                <SettingRow
-                  icon={<KeyRound className="size-5" />}
-                  title="Change Password"
-                  detail="Update your password"
-                  action={<ChevronRight className="size-4 text-muted-foreground" />}
-                  onClick={() => setActiveModal("password")}
-                />
-                <SettingRow
-                  icon={<ShieldCheck className="size-5" />}
-                  title="Two-Factor Auth"
-                  detail="Extra security layer"
-                  action={
-                    <Switch
-                      checked={settings.twoFactorAuth}
-                      onCheckedChange={(checked) => {
-                        setSettings((s) => ({ ...s, twoFactorAuth: checked }));
-                        showToast(checked ? "2FA enabled" : "2FA disabled");
-                      }}
-                      aria-label="2FA"
-                    />
-                  }
-                />
-              </div>
-            </CardContent>
-          </Card>
+          <motion.div variants={itemVariants}>
+            <Card className="bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
+              <CardContent className="p-3">
+                <p className="mb-2 text-xs font-extrabold text-muted-foreground px-2">
+                  Account
+                </p>
+                <div className="divide-y divide-border/80 dark:divide-white/5">
+                  <SettingRow
+                    icon={<Settings2 className="size-5" />}
+                    title="Personal Info"
+                    detail="Name, email, phone"
+                    action={<ChevronRight className="size-4 text-muted-foreground" />}
+                    onClick={() => setActiveModal("personalInfo")}
+                  />
+                  <SettingRow
+                    icon={<KeyRound className="size-5" />}
+                    title="Change Password"
+                    detail="Update your password"
+                    action={<ChevronRight className="size-4 text-muted-foreground" />}
+                    onClick={() => setActiveModal("password")}
+                  />
+                  <SettingRow
+                    icon={<ShieldCheck className="size-5" />}
+                    title="Two-Factor Auth"
+                    detail="Extra security layer"
+                    action={
+                      <Switch
+                        checked={settings.twoFactorAuth}
+                        onCheckedChange={(checked) => {
+                          setSettings((s) => ({ ...s, twoFactorAuth: checked }));
+                          showToast(checked ? "2FA enabled" : "2FA disabled");
+                        }}
+                        aria-label="2FA"
+                      />
+                    }
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
 
-          <Card className="bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
-            <CardContent className="p-3">
-              <p className="mb-2 text-xs font-extrabold text-muted-foreground px-2">
-                Preferences
-              </p>
-              <div className="divide-y divide-border/80 dark:divide-white/5">
-                <SettingRow
-                  icon={<Moon className="size-5" />}
-                  title="Dark Mode"
-                  detail={isDark ? "On" : "Off"}
-                  action={
-                    <Switch checked={isDark} onCheckedChange={toggleTheme} aria-label="Dark mode" />
-                  }
-                />
-                <SettingRow
-                  icon={<Bell className="size-5" />}
-                  title="Notifications"
-                  detail="Push & email alerts"
-                  action={
-                    <Switch
-                      checked={settings.notifications}
-                      onCheckedChange={(checked) => {
-                        setSettings((s) => ({ ...s, notifications: checked }));
-                        showToast(
-                          checked ? "Notifications enabled" : "Notifications disabled"
-                        );
-                      }}
-                      aria-label="Notifications"
-                    />
-                  }
-                />
-                <SettingRow
-                  icon={<Languages className="size-5" />}
-                  title="Language"
-                  detail={settings.language}
-                  action={<ChevronRight className="size-4 text-muted-foreground" />}
-                  onClick={() => setActiveModal("language")}
-                />
-                <SettingRow
-                  icon={<Globe className="size-5" />}
-                  title="Currency"
-                  detail={`${settings.currency} - ${currencies.find((c) => c.code === settings.currency)?.name || "Indian Rupee"}`}
-                  action={<ChevronRight className="size-4 text-muted-foreground" />}
-                  onClick={() => setActiveModal("currency")}
-                />
-                <SettingRow
-                  icon={<CircleDollarSign className="size-5" />}
-                  title="Monthly Budget"
-                  detail={`${settings.monthlyBudget} active`}
-                  action={
-                    <Badge variant="secondary" className="bg-primary/10 text-primary">
-                      {settings.monthlyBudget}
-                    </Badge>
-                  }
-                  onClick={() => setActiveModal("budget")}
-                />
-              </div>
-            </CardContent>
-          </Card>
+          <motion.div variants={itemVariants}>
+            <Card className="bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
+              <CardContent className="p-3">
+                <p className="mb-2 text-xs font-extrabold text-muted-foreground px-2">
+                  Preferences
+                </p>
+                <div className="divide-y divide-border/80 dark:divide-white/5">
+                  <SettingRow
+                    icon={<Moon className="size-5" />}
+                    title="Dark Mode"
+                    detail={isDark ? "On" : "Off"}
+                    action={
+                      <Switch checked={isDark} onCheckedChange={toggleTheme} aria-label="Dark mode" />
+                    }
+                  />
+                  <SettingRow
+                    icon={<Bell className="size-5" />}
+                    title="Notifications"
+                    detail="Push & email alerts"
+                    action={
+                      <Switch
+                        checked={settings.notifications}
+                        onCheckedChange={(checked) => {
+                          setSettings((s) => ({ ...s, notifications: checked }));
+                          showToast(
+                            checked ? "Notifications enabled" : "Notifications disabled"
+                          );
+                        }}
+                        aria-label="Notifications"
+                      />
+                    }
+                  />
+                  <SettingRow
+                    icon={<Languages className="size-5" />}
+                    title="Language"
+                    detail={settings.language}
+                    action={<ChevronRight className="size-4 text-muted-foreground" />}
+                    onClick={() => setActiveModal("language")}
+                  />
+                  <SettingRow
+                    icon={<Globe className="size-5" />}
+                    title="Currency"
+                    detail={`${settings.currency} - ${currencies.find((c) => c.code === settings.currency)?.name || "Indian Rupee"}`}
+                    action={<ChevronRight className="size-4 text-muted-foreground" />}
+                    onClick={() => setActiveModal("currency")}
+                  />
+                  <SettingRow
+                    icon={<CircleDollarSign className="size-5" />}
+                    title="Monthly Budget"
+                    detail={`₹${monthlyBudget.toLocaleString("en-IN")} active`}
+                    action={
+                      <Badge variant="secondary" className="bg-primary/10 text-primary">
+                        ₹{monthlyBudget.toLocaleString("en-IN")}
+                      </Badge>
+                    }
+                    onClick={() => setActiveModal("budget")}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
 
-          <Card className="bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
-            <CardContent className="p-3">
-              <p className="mb-2 text-xs font-extrabold text-muted-foreground px-2">
-                Payment Methods
-              </p>
-              <div className="divide-y divide-border/80 dark:divide-white/5">
-                <SettingRow
-                  icon={<CreditCard className="size-5" />}
-                  title="Saved Cards"
-                  detail="2 cards added"
-                  action={<Badge variant="outline" className="bg-transparent">2</Badge>}
-                />
-                <SettingRow
-                  icon={<WalletCards className="size-5" />}
-                  title="UPI"
-                  detail="avery@oksbi"
-                  action={
-                    <Badge variant="secondary" className="bg-primary/10 text-primary">
-                      Active
-                    </Badge>
-                  }
-                />
-                <SettingRow
-                  icon={<Plus className="size-5" />}
-                  title="Add Payment Method"
-                  detail="Add new card or UPI"
-                  action={<ChevronRight className="size-4 text-muted-foreground" />}
-                  onClick={() => setActiveModal("payment")}
-                />
-              </div>
-            </CardContent>
-          </Card>
+          <motion.div variants={itemVariants}>
+            <Card className="bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
+              <CardContent className="p-3">
+                <p className="mb-2 text-xs font-extrabold text-muted-foreground px-2">
+                  Payment Methods
+                </p>
+                <div className="divide-y divide-border/80 dark:divide-white/5">
+                  <SettingRow
+                    icon={<CreditCard className="size-5" />}
+                    title="Saved Cards"
+                    detail="2 cards added"
+                    action={<Badge variant="outline" className="bg-transparent">2</Badge>}
+                  />
+                  <SettingRow
+                    icon={<WalletCards className="size-5" />}
+                    title="UPI"
+                    detail="avery@oksbi"
+                    action={
+                      <Badge variant="secondary" className="bg-primary/10 text-primary">
+                        Active
+                      </Badge>
+                    }
+                  />
+                  <SettingRow
+                    icon={<Plus className="size-5" />}
+                    title="Add Payment Method"
+                    detail="Add new card or UPI"
+                    action={<ChevronRight className="size-4 text-muted-foreground" />}
+                    onClick={() => setActiveModal("payment")}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
 
-          <Card className="bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
-            <CardContent className="p-3">
-              <p className="mb-2 text-xs font-extrabold text-muted-foreground px-2">
-                Support & Privacy
-              </p>
-              <div className="divide-y divide-border/80 dark:divide-white/5">
-                <SettingRow
-                  icon={<Headphones className="size-5" />}
-                  title="Help Center"
-                  detail="FAQs and support"
-                  action={<ChevronRight className="size-4 text-muted-foreground" />}
-                  onClick={() => setActiveModal("help")}
-                />
-                <SettingRow
-                  icon={<HelpCircle className="size-5" />}
-                  title="Contact Us"
-                  detail="Email & chat support"
-                  action={<ChevronRight className="size-4 text-muted-foreground" />}
-                  onClick={() => setActiveModal("contact")}
-                />
-                <SettingRow
-                  icon={<FileText className="size-5" />}
-                  title="Terms of Service"
-                  detail="Legal agreement"
-                  action={<ChevronRight className="size-4 text-muted-foreground" />}
-                  onClick={() => setActiveModal("terms")}
-                />
-                <SettingRow
-                  icon={<Shield className="size-5" />}
-                  title="Privacy Policy"
-                  detail="How we handle data"
-                  action={<ChevronRight className="size-4 text-muted-foreground" />}
-                  onClick={() => setActiveModal("privacy")}
-                />
-              </div>
-            </CardContent>
-          </Card>
+          <motion.div variants={itemVariants}>
+            <Card className="bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
+              <CardContent className="p-3">
+                <p className="mb-2 text-xs font-extrabold text-muted-foreground px-2">
+                  Support & Privacy
+                </p>
+                <div className="divide-y divide-border/80 dark:divide-white/5">
+                  <SettingRow
+                    icon={<Headphones className="size-5" />}
+                    title="Help Center"
+                    detail="FAQs and support"
+                    action={<ChevronRight className="size-4 text-muted-foreground" />}
+                    onClick={() => setActiveModal("help")}
+                  />
+                  <SettingRow
+                    icon={<HelpCircle className="size-5" />}
+                    title="Contact Us"
+                    detail="Email & chat support"
+                    action={<ChevronRight className="size-4 text-muted-foreground" />}
+                    onClick={() => setActiveModal("contact")}
+                  />
+                  <SettingRow
+                    icon={<FileText className="size-5" />}
+                    title="Terms of Service"
+                    detail="Legal agreement"
+                    action={<ChevronRight className="size-4 text-muted-foreground" />}
+                    onClick={() => setActiveModal("terms")}
+                  />
+                  <SettingRow
+                    icon={<Shield className="size-5" />}
+                    title="Privacy Policy"
+                    detail="How we handle data"
+                    action={<ChevronRight className="size-4 text-muted-foreground" />}
+                    onClick={() => setActiveModal("privacy")}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
 
-          <Card className="bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
-            <CardContent className="p-3">
-              <p className="mb-2 text-xs font-extrabold text-muted-foreground px-2">
-                Danger Zone
-              </p>
-              <div className="divide-y divide-border/80 dark:divide-white/5">
-                <SettingRow
-                  icon={<Trash2 className="size-5 text-red-500" />}
-                  title="Delete Account"
-                  detail="Permanently remove account"
-                  action={<ChevronRight className="size-4 text-red-500" />}
-                  onClick={() => setActiveModal("delete")}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+          <motion.div variants={itemVariants}>
+            <Card className="bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
+              <CardContent className="p-3">
+                <p className="mb-2 text-xs font-extrabold text-muted-foreground px-2">
+                  Danger Zone
+                </p>
+                <div className="divide-y divide-border/80 dark:divide-white/5">
+                  <SettingRow
+                    icon={<Trash2 className="size-5 text-red-500" />}
+                    title="Delete Account"
+                    detail="Permanently remove account"
+                    action={<ChevronRight className="size-4 text-red-500" />}
+                    onClick={() => setActiveModal("delete")}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </motion.div>
 
         {activeModal && (
           <ModalOverlay onClose={() => setActiveModal(null)}>
@@ -571,6 +624,7 @@ export function ProfileScreen({
                       value={profileData.name}
                       onChange={(e) => handleInputChange("name", e.target.value)}
                       placeholder="Your name"
+                      className="input-glow"
                     />
                   </Field>
                   <Field label="Email Address">
@@ -579,6 +633,7 @@ export function ProfileScreen({
                       onChange={(e) => handleInputChange("email", e.target.value)}
                       type="email"
                       placeholder="your@email.com"
+                      className="input-glow"
                     />
                   </Field>
                   <Field label="Phone Number">
@@ -586,6 +641,7 @@ export function ProfileScreen({
                       value={profileData.phone}
                       onChange={(e) => handleInputChange("phone", e.target.value)}
                       placeholder="+91 98765 43210"
+                      className="input-glow"
                     />
                   </Field>
                   <Field label="Date of Birth">
@@ -593,6 +649,7 @@ export function ProfileScreen({
                       value={profileData.dob}
                       onChange={(e) => handleInputChange("dob", e.target.value)}
                       placeholder="DD/MM/YYYY"
+                      className="input-glow"
                     />
                   </Field>
                   <Button onClick={handleSaveProfile} className="w-full mt-2">
@@ -612,6 +669,7 @@ export function ProfileScreen({
                         setPasswordData((p) => ({ ...p, current: e.target.value }))
                       }
                       placeholder="Enter current password"
+                      className="input-glow"
                     />
                   </Field>
                   <Field label="New Password">
@@ -622,6 +680,7 @@ export function ProfileScreen({
                         setPasswordData((p) => ({ ...p, new: e.target.value }))
                       }
                       placeholder="Enter new password"
+                      className="input-glow"
                     />
                   </Field>
                   <Field label="Confirm New Password">
@@ -632,6 +691,7 @@ export function ProfileScreen({
                         setPasswordData((p) => ({ ...p, confirm: e.target.value }))
                       }
                       placeholder="Confirm new password"
+                      className="input-glow"
                     />
                   </Field>
                   <Button onClick={handlePasswordChange} className="w-full mt-2">
@@ -644,8 +704,10 @@ export function ProfileScreen({
               <ModalContent title="Select Language" onClose={() => setActiveModal(null)}>
                 <div className="space-y-2">
                   {languages.map((lang) => (
-                    <button
+                    <motion.button
                       key={lang}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                       onClick={() => {
                         setSettings((s) => ({ ...s, language: lang }));
                         setActiveModal(null);
@@ -659,7 +721,7 @@ export function ProfileScreen({
                       )}
                     >
                       {lang}
-                    </button>
+                    </motion.button>
                   ))}
                 </div>
               </ModalContent>
@@ -668,8 +730,10 @@ export function ProfileScreen({
               <ModalContent title="Select Currency" onClose={() => setActiveModal(null)}>
                 <div className="space-y-2">
                   {currencies.map((curr) => (
-                    <button
+                    <motion.button
                       key={curr.code}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                       onClick={() => {
                         setSettings((s) => ({ ...s, currency: curr.code }));
                         setActiveModal(null);
@@ -684,7 +748,7 @@ export function ProfileScreen({
                     >
                       <span>{curr.name}</span>
                       <span className="font-bold">{curr.symbol}</span>
-                    </button>
+                    </motion.button>
                   ))}
                 </div>
               </ModalContent>
@@ -695,11 +759,12 @@ export function ProfileScreen({
                   {budgetOptions.map((budget) => {
                     const budgetValue = parseInt(budget.replace(/[^0-9]/g, ""));
                     return (
-                      <button
+                      <motion.button
                         key={budget}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                         onClick={() => {
                           setMonthlyBudget?.(budgetValue);
-                          setSettings((s) => ({ ...s, monthlyBudget: budget }));
                           setActiveModal(null);
                           showToast(`Budget set to ${budget}`);
                         }}
@@ -711,7 +776,7 @@ export function ProfileScreen({
                         )}
                       >
                         {budget}
-                      </button>
+                      </motion.button>
                     );
                   })}
                 </div>
@@ -747,6 +812,7 @@ export function ProfileScreen({
                         }
                         placeholder="1234 5678 9012 3456"
                         maxLength={19}
+                        className="input-glow"
                       />
                     </Field>
                     <Field label="Cardholder Name">
@@ -756,6 +822,7 @@ export function ProfileScreen({
                           setPaymentMethod((p) => ({ ...p, name: e.target.value }))
                         }
                         placeholder="Name on card"
+                        className="input-glow"
                       />
                     </Field>
                     <Field label="Expiry Date">
@@ -766,6 +833,7 @@ export function ProfileScreen({
                         }
                         placeholder="MM/YY"
                         maxLength={5}
+                        className="input-glow"
                       />
                     </Field>
                   </div>
@@ -777,6 +845,7 @@ export function ProfileScreen({
                         setPaymentMethod((p) => ({ ...p, upi: e.target.value }))
                       }
                       placeholder="yourname@upi"
+                      className="input-glow"
                     />
                   </Field>
                 )}
@@ -892,16 +961,18 @@ export function ProfileScreen({
           </ModalOverlay>
         )}
 
-        {toast && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-primary text-white px-4 py-2 rounded-full font-semibold text-sm shadow-lg z-50"
-          >
-            {toast}
-          </motion.div>
-        )}
+        <AnimatePresence>
+          {toast && (
+            <motion.div
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.95 }}
+              className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-primary text-white px-4 py-2 rounded-full font-semibold text-sm shadow-lg z-50"
+            >
+              {toast}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <motion.button
           onClick={onLogout}
@@ -914,7 +985,7 @@ export function ProfileScreen({
         </motion.button>
 
         <p className="mt-4 text-center text-xs font-medium text-muted-foreground">
-          SpendsTracks v1.0.0 • Made with ❤️
+          SpendsTracks v1.1.1 • Made with ❤️
         </p>
       </div>
 

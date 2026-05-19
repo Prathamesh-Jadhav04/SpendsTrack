@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Trash2, Target } from "lucide-react";
+import { Trash2, Target, ArrowLeft } from "lucide-react";
 
 import { PhoneFrame, ScreenHeader, BottomNav, Field, ModalOverlay, ModalContent, ProgressBar, EmptyState } from "@/components/shared";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,6 +21,9 @@ interface GoalsScreenProps {
 
 export function GoalsScreen({ onNavigate, goals, onAddGoal, onUpdateProgress, onDeleteGoal }: GoalsScreenProps) {
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showFundModal, setShowFundModal] = useState(false);
+  const [fundGoalId, setFundGoalId] = useState<string | null>(null);
+  const [fundAmount, setFundAmount] = useState("");
   const [newGoal, setNewGoal] = useState({ name: "", target: 10000, deadline: "", color: "#7766e8" });
   const colors = ["#7766e8", "#10b889", "#f4b740", "#ff6b5f", "#64a7ff"];
 
@@ -32,67 +35,84 @@ export function GoalsScreen({ onNavigate, goals, onAddGoal, onUpdateProgress, on
     }
   };
 
+  const handleAddFunds = () => {
+    if (fundGoalId && fundAmount && parseInt(fundAmount) > 0) {
+      onUpdateProgress(fundGoalId, parseInt(fundAmount));
+      setShowFundModal(false);
+      setFundGoalId(null);
+      setFundAmount("");
+    }
+  };
+
   return (
     <PhoneFrame label="Goals screen" className="pb-28">
-      <ScreenHeader
-        eyebrow="Savings"
-        title="Goals"
-        action={<Button size="sm" onClick={() => setShowAddModal(true)} className="rounded-full">+ Add</Button>}
-      />
+      <div className="h-full flex flex-col overflow-y-auto no-scrollbar smooth-scroll momentum-scroll">
+        <ScreenHeader
+          eyebrow="Savings"
+          title="Goals"
+          action={
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={() => onNavigate("analytics")} className="rounded-full">
+                <ArrowLeft className="size-4 mr-1" />
+                Back
+              </Button>
+              <Button size="sm" onClick={() => setShowAddModal(true)} className="rounded-full">+ Add</Button>
+            </div>
+          }
+        />
 
-      <div className="space-y-4">
-        {goals.map((goal) => {
-          const progress = Math.min((goal.current / goal.target) * 100, 100);
-          const remaining = goal.target - goal.current;
+        <div className="space-y-4 pb-4">
+          {goals.map((goal) => {
+            const progress = Math.min((goal.current / goal.target) * 100, 100);
+            const remaining = goal.target - goal.current;
 
-          return (
-            <Card key={goal.id} className="bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
-              <CardContent className="p-4">
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <h4 className="font-extrabold text-base">{goal.name}</h4>
-                    <p className="text-xs text-muted-foreground">Target: ₹{goal.target.toLocaleString("en-IN")}</p>
+            return (
+              <Card key={goal.id} className="bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h4 className="font-extrabold text-base">{goal.name}</h4>
+                      <p className="text-xs text-muted-foreground">Target: ₹{goal.target.toLocaleString("en-IN")}</p>
+                    </div>
+                    <button onClick={() => onDeleteGoal(goal.id)} className="p-2 text-muted-foreground hover:text-red-500">
+                      <Trash2 className="size-4" />
+                    </button>
                   </div>
-                  <button onClick={() => onDeleteGoal(goal.id)} className="p-2 text-muted-foreground hover:text-red-500">
-                    <Trash2 className="size-4" />
-                  </button>
-                </div>
 
-                <ProgressBar value={progress} className="mb-2" />
+                  <ProgressBar value={progress} className="mb-2" />
 
-                <div className="flex justify-between text-sm">
-                  <span className="font-semibold text-muted-foreground">₹{goal.current.toLocaleString("en-IN")}</span>
-                  <span className="font-bold" style={{ color: goal.color }}>{progress.toFixed(0)}%</span>
-                </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="font-semibold text-muted-foreground">₹{goal.current.toLocaleString("en-IN")}</span>
+                    <span className="font-bold" style={{ color: goal.color }}>{progress.toFixed(0)}%</span>
+                  </div>
 
-                <p className="text-xs text-muted-foreground mt-2">₹{remaining.toLocaleString("en-IN")} remaining</p>
-                <p className="text-xs text-muted-foreground">Due: {new Date(goal.deadline).toLocaleDateString("en-IN")}</p>
+                  <p className="text-xs text-muted-foreground mt-2">₹{remaining.toLocaleString("en-IN")} remaining</p>
+                  <p className="text-xs text-muted-foreground">Due: {new Date(goal.deadline).toLocaleDateString("en-IN")}</p>
 
-                <Button
-                  size="sm"
-                  className="w-full mt-3"
-                  onClick={() => {
-                    const amount = prompt("Enter amount to add:");
-                    if (amount && parseInt(amount) > 0) {
-                      onUpdateProgress(goal.id, parseInt(amount));
-                    }
-                  }}
-                >
-                  Add Funds
-                </Button>
-              </CardContent>
-            </Card>
-          );
-        })}
+                  <Button
+                    size="sm"
+                    className="w-full mt-3"
+                    onClick={() => {
+                      setFundGoalId(goal.id);
+                      setShowFundModal(true);
+                    }}
+                  >
+                    Add Funds
+                  </Button>
+                </CardContent>
+              </Card>
+            );
+          })}
 
-        {goals.length === 0 && (
-          <EmptyState
-            icon={<Target className="size-7 text-primary" />}
-            title="No goals yet"
-            message="Set a savings target to start achieving your dreams!"
-            action={<Button onClick={() => setShowAddModal(true)} className="rounded-xl">+ Create Goal</Button>}
-          />
-        )}
+          {goals.length === 0 && (
+            <EmptyState
+              icon={<Target className="size-7 text-primary" />}
+              title="No goals yet"
+              message="Set a savings target to start achieving your dreams!"
+              action={<Button onClick={() => setShowAddModal(true)} className="rounded-xl">+ Create Goal</Button>}
+            />
+          )}
+        </div>
       </div>
 
       {showAddModal && (
@@ -133,6 +153,25 @@ export function GoalsScreen({ onNavigate, goals, onAddGoal, onUpdateProgress, on
                 </div>
               </Field>
               <Button onClick={handleAddGoal} className="w-full mt-2">Create Goal</Button>
+            </div>
+          </ModalContent>
+        </ModalOverlay>
+      )}
+
+      {showFundModal && (
+        <ModalOverlay onClose={() => setShowFundModal(false)}>
+          <ModalContent title="Add Funds" onClose={() => setShowFundModal(false)}>
+            <div className="space-y-3">
+              <Field label="Amount">
+                <Input
+                  type="number"
+                  value={fundAmount}
+                  onChange={(e) => setFundAmount(e.target.value)}
+                  placeholder="Enter amount"
+                  autoFocus
+                />
+              </Field>
+              <Button onClick={handleAddFunds} className="w-full mt-2">Add Funds</Button>
             </div>
           </ModalContent>
         </ModalOverlay>

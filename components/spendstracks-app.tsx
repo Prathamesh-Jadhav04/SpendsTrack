@@ -83,22 +83,6 @@ export function SpendsTracksApp() {
     setMonthlyBudget,
   });
 
-  // Re-initialize useAppData with actual auth state
-  useEffect(() => {
-    const saved = localStorage.getItem("spendstracks_data");
-    if (saved) {
-      const data = JSON.parse(saved);
-      if (isLoggedIn) {
-        setTransactions(data.transactions || []);
-        setTransactionHistory(data.transactionHistory || []);
-        setGoals(data.goals || []);
-        setRecurring(data.recurring || []);
-        setCustomCategories(data.customCategories || []);
-        setMonthlyBudget(data.monthlyBudget || 160000);
-      }
-    }
-  }, [isLoggedIn]);
-
   // Splash screen auto-redirect
   useEffect(() => {
     if (currentScreen === "splash") {
@@ -153,7 +137,7 @@ export function SpendsTracksApp() {
         return (
           <TransactionsScreen
             onNavigate={handleNavigation}
-            transactions={getFilteredTransactions()}
+            transactions={transactions}
             filter={filter}
             onFilterChange={setFilter}
             searchQuery={searchQuery}
@@ -178,7 +162,7 @@ export function SpendsTracksApp() {
         return (
           <TransactionsScreen
             onNavigate={handleNavigation}
-            transactions={getFilteredTransactions()}
+            transactions={transactions}
             filter={filter}
             onFilterChange={setFilter}
             searchQuery={searchQuery}
@@ -218,7 +202,7 @@ export function SpendsTracksApp() {
         return (
           <ReportsScreen
             onNavigate={handleNavigation}
-            transactions={transactionHistory}
+            transactions={[...transactions, ...transactionHistory]}
           />
         );
       case "categories":
@@ -239,6 +223,9 @@ export function SpendsTracksApp() {
             setMonthlyBudget={setMonthlyBudget}
             onExport={exportToCSV}
             user={user}
+            transactions={transactions}
+            transactionHistory={transactionHistory}
+            customCategories={customCategories}
           />
         );
       default:

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import type {
   Transaction,
   Goal,
@@ -9,7 +9,6 @@ import type {
 } from "@/components/types";
 import {
   expenseCategories,
-  incomeCategories,
   categoryIcons,
   categoryTitles,
 } from "@/components/constants";
@@ -70,6 +69,11 @@ export function useAppData({ isLoggedIn, user, showToast }: UseAppDataProps) {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const transactionsRef = useRef(transactions);
+  transactionsRef.current = transactions;
+  const monthlyBudgetRef = useRef(monthlyBudget);
+  monthlyBudgetRef.current = monthlyBudget;
+
   // Load from localStorage on mount
   useEffect(() => {
     const saved = localStorage.getItem("spendstracks_data");
@@ -113,10 +117,10 @@ export function useAppData({ isLoggedIn, user, showToast }: UseAppDataProps) {
       if (data.type === "expense") {
         const newExpense = parseInt(data.amount);
         const totalExpenses =
-          transactions
+          transactionsRef.current
             .filter((t) => t.type === "expense")
             .reduce((sum, t) => sum + parseInt(t.amount.replace(/[^0-9]/g, "")), 0) + newExpense;
-        const budgetUsed = (totalExpenses / monthlyBudget) * 100;
+        const budgetUsed = (totalExpenses / monthlyBudgetRef.current) * 100;
 
         if (budgetUsed > 100) {
           showToast("⚠️ Budget exceeded! You've spent more than your monthly limit.");
@@ -129,7 +133,7 @@ export function useAppData({ isLoggedIn, user, showToast }: UseAppDataProps) {
         showToast("Income added successfully!");
       }
     },
-    [transactions, monthlyBudget, showToast]
+    [showToast]
   );
 
   const handleDeleteTransaction = useCallback(
@@ -226,21 +230,6 @@ export function useAppData({ isLoggedIn, user, showToast }: UseAppDataProps) {
     showToast("Data exported successfully!");
   }, [transactionHistory, showToast]);
 
-  const getMonthlyStats = useCallback(() => {
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const monthTransactions = transactionHistory.filter(
-      (t) => t.date && new Date(t.date) >= monthStart
-    );
-    const income = monthTransactions
-      .filter((t) => t.type === "income")
-      .reduce((sum, t) => sum + parseInt(t.amount.replace(/[^0-9]/g, "")), 0);
-    const expense = monthTransactions
-      .filter((t) => t.type === "expense")
-      .reduce((sum, t) => sum + parseInt(t.amount.replace(/[^0-9]/g, "")), 0);
-    return { income, expense, savings: income - expense };
-  }, [transactionHistory]);
-
   const getFilteredTransactions = useCallback(() => {
     let filtered =
       filter === "all"
@@ -278,7 +267,6 @@ export function useAppData({ isLoggedIn, user, showToast }: UseAppDataProps) {
     selectedTransaction,
     setSelectedTransaction,
     isLoading,
-    setIsLoading,
     handleAddTransaction,
     handleDeleteTransaction,
     handleEditTransaction,
@@ -290,7 +278,6 @@ export function useAppData({ isLoggedIn, user, showToast }: UseAppDataProps) {
     handleAddCustomCategory,
     handleDeleteCategory,
     exportToCSV,
-    getMonthlyStats,
     getFilteredTransactions,
   };
 }

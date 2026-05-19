@@ -15,15 +15,15 @@ export function ModalOverlay({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm"
+        className="fixed inset-0 z-[100] flex items-end justify-center bg-black/50 backdrop-blur-sm"
         onClick={onClose}
       >
         <motion.div
-          initial={{ y: 100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 100, opacity: 0 }}
+          initial={{ y: "100%" }}
+          animate={{ y: 0 }}
+          exit={{ y: "100%" }}
           transition={{ type: "spring", damping: 25, stiffness: 300 }}
-          className="w-full max-w-[480px] rounded-t-3xl bg-white p-5 dark:bg-card"
+          className="w-full max-w-[480px] max-h-[85vh] rounded-t-3xl bg-white dark:bg-card overflow-hidden flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
           {children}
@@ -43,14 +43,16 @@ export function ModalContent({
   onClose: () => void;
 }) {
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
+    <div className="flex flex-col max-h-[85vh]">
+      <div className="flex items-center justify-between p-5 pb-3 border-b border-border/50 dark:border-white/10 shrink-0">
         <h3 className="text-lg font-extrabold">{title}</h3>
-        <button onClick={onClose} className="p-2 hover:bg-muted rounded-full">
+        <button onClick={onClose} className="p-2 hover:bg-muted rounded-full transition-colors">
           ✕
         </button>
       </div>
-      {children}
+      <div className="p-5 overflow-y-auto">
+        {children}
+      </div>
     </div>
   );
 }

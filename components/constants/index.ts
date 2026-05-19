@@ -40,15 +40,6 @@ export const chartData = [
   { name: "Groceries", value: 7, color: "#f97316" },
 ];
 
-export const budgets = [
-  { name: "Food & Dining", spent: "₹31,000", limit: "₹40,000", progress: 78 },
-  { name: "Shopping", spent: "₹19,500", limit: "₹25,000", progress: 72 },
-  { name: "Transport", spent: "₹10,500", limit: "₹17,500", progress: 60 },
-  { name: "Bills", spent: "₹15,000", limit: "₹20,000", progress: 75 },
-  { name: "Entertainment", spent: "₹8,000", limit: "₹12,000", progress: 67 },
-  { name: "Health & Fitness", spent: "₹5,500", limit: "₹10,000", progress: 55 },
-];
-
 export const screenAnimation = {
   hidden: { opacity: 0, y: 18 },
   visible: { opacity: 1, y: 0 },

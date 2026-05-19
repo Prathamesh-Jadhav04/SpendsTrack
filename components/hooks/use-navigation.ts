@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import type { Screen } from "@/components/types";
 
 const screenOrder: Screen[] = [
@@ -22,11 +22,12 @@ export function useNavigation() {
   const [currentScreen, setCurrentScreen] = useState<Screen>("splash");
   const [prevScreen, setPrevScreen] = useState<Screen | null>(null);
   const [isNavigating, setIsNavigating] = useState(false);
+  const currentScreenRef = useRef(currentScreen);
+  currentScreenRef.current = currentScreen;
 
   const handleScreenChange = useCallback((screen: Screen) => {
     setIsNavigating(true);
-    setPrevScreen((prev) => prev);
-    const oldScreen = currentScreen;
+    setPrevScreen(currentScreenRef.current);
     setTimeout(() => {
       setCurrentScreen(screen);
       setTimeout(() => setIsNavigating(false), 100);
@@ -36,13 +37,13 @@ export function useNavigation() {
   const handleNavigation = useCallback((screen: Screen) => {
     if (screen !== "login" && screen !== "splash") {
       setIsNavigating(true);
-      setPrevScreen(currentScreen);
+      setPrevScreen(currentScreenRef.current);
       setTimeout(() => {
         setCurrentScreen(screen);
         setTimeout(() => setIsNavigating(false), 100);
       }, 50);
     }
-  }, [currentScreen]);
+  }, []);
 
   const getDirection = useCallback(() => {
     const currentIdx = screenOrder.indexOf(currentScreen);

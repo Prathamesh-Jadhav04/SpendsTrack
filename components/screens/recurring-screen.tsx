@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Trash2, RefreshCcw, TrendingUp, TrendingDown } from "lucide-react";
+import { Trash2, RefreshCcw, TrendingUp, TrendingDown, ArrowLeft } from "lucide-react";
 
 import { PhoneFrame, ScreenHeader, BottomNav, Field, ModalOverlay, ModalContent, EmptyState } from "@/components/shared";
 import { Card, CardContent } from "@/components/ui/card";
@@ -34,48 +34,58 @@ export function RecurringScreen({ onNavigate, recurring, onAddRecurring, onDelet
 
   return (
     <PhoneFrame label="Recurring screen" className="pb-28">
-      <ScreenHeader
-        eyebrow="Automatic"
-        title="Recurring"
-        action={<Button size="sm" onClick={() => setShowAddModal(true)} className="rounded-full">+ Add</Button>}
-      />
+      <div className="h-full flex flex-col overflow-y-auto no-scrollbar smooth-scroll momentum-scroll">
+        <ScreenHeader
+          eyebrow="Automatic"
+          title="Recurring"
+          action={
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={() => onNavigate("analytics")} className="rounded-full">
+                <ArrowLeft className="size-4 mr-1" />
+                Back
+              </Button>
+              <Button size="sm" onClick={() => setShowAddModal(true)} className="rounded-full">+ Add</Button>
+            </div>
+          }
+        />
 
-      <div className="space-y-4">
-        {recurring.map((item) => (
-          <Card key={item.id} className="bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
-            <CardContent className="p-4">
-              <div className="flex justify-between items-start">
-                <div className="flex items-center gap-3">
-                  <div className={cn("size-10 rounded-xl flex items-center justify-center font-bold", item.type === "income" ? "bg-secondary text-primary" : "bg-[#fff0ee] text-red-500")}>
-                    {item.type === "income" ? <TrendingUp className="size-5" /> : <TrendingDown className="size-5" />}
+        <div className="space-y-4 pb-4">
+          {recurring.map((item) => (
+            <Card key={item.id} className="bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
+              <CardContent className="p-4">
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-3">
+                    <div className={cn("size-10 rounded-xl flex items-center justify-center font-bold", item.type === "income" ? "bg-secondary text-primary" : "bg-[#fff0ee] text-red-500")}>
+                      {item.type === "income" ? <TrendingUp className="size-5" /> : <TrendingDown className="size-5" />}
+                    </div>
+                    <div>
+                      <h4 className="font-extrabold">{item.title}</h4>
+                      <p className="text-xs text-muted-foreground capitalize">{item.frequency} • {item.category}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="font-extrabold">{item.title}</h4>
-                    <p className="text-xs text-muted-foreground capitalize">{item.frequency} • {item.category}</p>
-                  </div>
+                  <button onClick={() => onDeleteRecurring(item.id)} className="p-2 text-muted-foreground hover:text-red-500">
+                    <Trash2 className="size-4" />
+                  </button>
                 </div>
-                <button onClick={() => onDeleteRecurring(item.id)} className="p-2 text-muted-foreground hover:text-red-500">
-                  <Trash2 className="size-4" />
-                </button>
-              </div>
-              <div className="mt-3 flex justify-between items-center">
-                <span className={`font-extrabold text-lg ${item.type === "income" ? "text-primary" : "text-red-500"}`}>
-                  {item.type === "income" ? "+" : "-"}₹{item.amount.toLocaleString("en-IN")}
-                </span>
-                <span className="text-xs text-muted-foreground">Next: {new Date(item.nextDate).toLocaleDateString("en-IN")}</span>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                <div className="mt-3 flex justify-between items-center">
+                  <span className={`font-extrabold text-lg ${item.type === "income" ? "text-primary" : "text-red-500"}`}>
+                    {item.type === "income" ? "+" : "-"}₹{item.amount.toLocaleString("en-IN")}
+                  </span>
+                  <span className="text-xs text-muted-foreground">Next: {new Date(item.nextDate).toLocaleDateString("en-IN")}</span>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
 
-        {recurring.length === 0 && (
-          <EmptyState
-            icon={<RefreshCcw className="size-7 text-primary" />}
-            title="No recurring payments"
-            message="Never miss a bill! Set up recurring transactions for subscriptions and bills."
-            action={<Button onClick={() => setShowAddModal(true)} className="rounded-xl">+ Add Recurring</Button>}
-          />
-        )}
+          {recurring.length === 0 && (
+            <EmptyState
+              icon={<RefreshCcw className="size-7 text-primary" />}
+              title="No recurring payments"
+              message="Never miss a bill! Set up recurring transactions for subscriptions and bills."
+              action={<Button onClick={() => setShowAddModal(true)} className="rounded-xl">+ Add Recurring</Button>}
+            />
+          )}
+        </div>
       </div>
 
       {showAddModal && (

@@ -55,7 +55,7 @@ export function TransactionDetailScreen({ transaction, onNavigate, onDelete, onE
               ) : (
                 <h3 className="text-lg font-extrabold">{transaction.title}</h3>
               )}
-              <p className="text-sm text-muted-foreground">{transaction.date}</p>
+              <p className="text-sm text-muted-foreground">{transaction.date || "No date"}</p>
             </div>
           </div>
 

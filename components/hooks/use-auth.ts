@@ -1,6 +1,5 @@
 import { useState, useCallback } from "react";
 import type { User, Screen, Transaction, Goal, Recurring, CustomCategory } from "@/components/types";
-import { expenseCategories, incomeCategories } from "@/components/constants";
 
 const generateId = () => Math.random().toString(36).substring(2, 15);
 
