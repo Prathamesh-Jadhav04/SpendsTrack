@@ -11,7 +11,7 @@
 
 **An ultra-premium, mobile-first personal finance tracking application engineered with a stark developer aesthetic, interactive analytics, savings goals tracking, subscription management, and an on-demand AI financial advisor.**
 
-[Explore App](#) • [Features](#3-core-features--deep-dive) • [Setup & Activation](#6-activation--setup-guide) • [Database Schema](#7-supabase-database-schema-setup) • [Deployment](#8-vercel-deployment-manual)
+[Explore App](https://spendtracks.vercel.app) • [Features](#3-core-features--deep-dive) • [Setup & Activation](#6-activation--setup-guide) • [Database Schema](#7-supabase-database-schema-setup) • [Deployment](#8-vercel-deployment-manual)
 
 </div>
 
@@ -498,7 +498,7 @@ OPENCODE_API_KEY                  = (Your OpenCode AI API key)
 ```
 
 ### 4. Deploy
-Click **Deploy**. Vercel will compile the codebase and deploy the application to a free `*.vercel.app` subdomain.
+Click **Deploy**. Vercel will compile the codebase and deploy the application to your custom domain or a free subdomain (e.g., [spendtracks.vercel.app](https://spendtracks.vercel.app)).
 
 ---
 
