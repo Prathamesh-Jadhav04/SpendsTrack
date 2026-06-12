@@ -1,3 +1,0 @@
--  ALWAYS USE :
-- frontend-design , sleek-design-mobile-apps, tailwind-4-docs, ui-ux-pro-max, vercel-react-best-practices, web-design-guidelines
-- DESIGN.md for this project Design
