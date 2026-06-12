@@ -150,7 +150,7 @@ export function SignUpScreen({ onSignUp, onLogin }: SignUpScreenProps) {
   };
 
   return (
-    <div className="grid lg:grid-cols-12 min-h-screen w-full relative overflow-hidden bg-ds-canvas">
+    <div className="grid lg:grid-cols-12 min-h-screen w-full relative overflow-y-auto lg:overflow-hidden bg-ds-canvas">
       {/* Left Visual Panel (Desktop only) */}
       <div className="lg:col-span-7 xl:col-span-8 hidden lg:flex flex-col justify-between p-12 bg-black text-white relative overflow-hidden">
         {/* Animated Mesh Gradients matching Vercel's blue-violet-pink-amber stops */}

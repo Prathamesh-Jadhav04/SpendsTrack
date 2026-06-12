@@ -389,7 +389,7 @@ export function ProfileScreen({
 
   return (
     <PhoneFrame label="Profile and settings screen" className="pb-28 lg:pb-0">
-      <div className="flex flex-col overflow-y-auto no-scrollbar smooth-scroll momentum-scroll lg:h-auto lg:overflow-visible">
+      <div className="flex flex-col overflow-y-visible no-scrollbar smooth-scroll momentum-scroll lg:h-auto lg:overflow-visible">
         <ScreenHeader
           eyebrow="Account"
           title="Profile"
