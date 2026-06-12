@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Settings2,
   KeyRound,
@@ -25,6 +25,8 @@ import {
   TrendingDown,
   ReceiptText,
   Tags,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -43,9 +45,12 @@ import {
   ModalContent,
   SettingRow,
 } from "@/components/shared";
-import { cn } from "@/lib/utils";
+import { cn, generateId } from "@/lib/utils";
 import { useTheme } from "@/components/theme-provider";
+import { sound } from "@/lib/sound";
 import type { Screen, User as UserType, ModalType, Transaction } from "@/components/types";
+import { useCurrency, useTranslation } from "@/components/hooks";
+import { supabase } from "@/lib/supabase";
 
 interface ProfileScreenProps {
   onNavigate: (screen: Screen) => void;
@@ -58,7 +63,7 @@ interface ProfileScreenProps {
   transactions?: Transaction[];
   transactionHistory?: Transaction[];
   customCategories?: { type: string }[];
-  onUpdateProfile?: (data: { name: string }) => void;
+  onUpdateProfile?: (data: { name: string; phone?: string; dob?: string }) => void;
 }
 
 export function ProfileScreen({
@@ -74,16 +79,44 @@ export function ProfileScreen({
   customCategories = [],
   onUpdateProfile,
 }: ProfileScreenProps) {
+  const { symbol, formatRaw } = useCurrency();
+  const { t } = useTranslation();
   const { theme, toggleTheme } = useTheme();
   const isDark = theme === "dark";
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+
+  useEffect(() => {
+    setIsMuted(sound.getMuted());
+  }, []);
+
+  const toggleMute = () => {
+    const nextMuted = !isMuted;
+    sound.setMuted(nextMuted);
+    setIsMuted(nextMuted);
+    if (globalShowToast) {
+      globalShowToast(nextMuted ? "Sound muted" : "Sound unmuted", 2000, "info");
+    }
+  };
   const [profileData, setProfileData] = useState({
     name: user?.name || "User",
     email: user?.email || "user@example.com",
-    phone: "",
-    dob: "",
+    phone: user?.phone || "",
+    dob: user?.dob || "",
   });
+
+  useEffect(() => {
+    if (user) {
+      setProfileData({
+        name: user.name || "User",
+        email: user.email || "user@example.com",
+        phone: user.phone || "",
+        dob: user.dob || "",
+      });
+    }
+  }, [user]);
+
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [settings, setSettings] = useState({
     notifications: true,
@@ -91,6 +124,34 @@ export function ProfileScreen({
     language: "English (India)",
     currency: "INR",
   });
+
+  // Load settings on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("spendstracks_settings");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          setSettings((prev) => ({ ...prev, ...parsed }));
+        } catch (e) {
+          console.error("Failed to parse settings:", e);
+        }
+      }
+    }
+  }, []);
+
+  // Save settings when they change
+  const isSettingsMounted = useRef(false);
+  useEffect(() => {
+    if (isSettingsMounted.current) {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("spendstracks_settings", JSON.stringify(settings));
+        window.dispatchEvent(new Event("spendstracks_settings_changed"));
+      }
+    } else {
+      isSettingsMounted.current = true;
+    }
+  }, [settings]);
   const [passwordData, setPasswordData] = useState({
     current: "",
     new: "",
@@ -103,6 +164,14 @@ export function ProfileScreen({
     expiry: "",
     upi: "",
   });
+  const [savedCards, setSavedCards] = useState([
+    { id: "1", type: "debit", brand: "VISA", number: "•••• •••• •••• 4291", expiry: "12/28" },
+    { id: "2", type: "credit", brand: "MASTERCARD", number: "•••• •••• •••• 8812", expiry: "06/29" },
+  ]);
+  const [upiHandles, setUpiHandles] = useState([
+    { id: "1", address: "avery@oksbi", status: "Active", isPrimary: true },
+    { id: "2", address: `${(user?.name || "user").toLowerCase().replace(/\s+/g, "")}@okicici`, status: "Linked", isPrimary: false },
+  ]);
 
   const showToast = (message: string) => {
     if (globalShowToast) {
@@ -124,7 +193,11 @@ export function ProfileScreen({
     if (validateForm()) {
       setIsEditing(false);
       if (onUpdateProfile) {
-        onUpdateProfile({ name: profileData.name });
+        onUpdateProfile({
+          name: profileData.name,
+          phone: profileData.phone,
+          dob: profileData.dob,
+        });
       } else {
         showToast("Profile updated successfully!");
       }
@@ -138,7 +211,7 @@ export function ProfileScreen({
     }
   };
 
-  const handlePasswordChange = () => {
+  const handlePasswordChange = async () => {
     if (!passwordData.current || !passwordData.new || !passwordData.confirm) {
       showToast("Please fill all fields");
       return;
@@ -151,9 +224,42 @@ export function ProfileScreen({
       showToast("Password must be at least 6 characters");
       return;
     }
-    setPasswordData({ current: "", new: "", confirm: "" });
-    setActiveModal(null);
-    showToast("Password changed successfully!");
+
+    if (user?.email === "guest@spendstracks.com" || user?.id === "admin-id") {
+      setPasswordData({ current: "", new: "", confirm: "" });
+      setActiveModal(null);
+      if (globalShowToast) {
+        globalShowToast("Password updated locally (simulated for guest/demo)", 3000, "success");
+      } else {
+        showToast("Password updated locally (simulated for guest/demo)");
+      }
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.updateUser({ password: passwordData.new });
+      if (error) {
+        if (globalShowToast) {
+          globalShowToast("Failed to update password: " + error.message, 3000, "error");
+        } else {
+          showToast("Failed to update password: " + error.message);
+        }
+        return;
+      }
+      setPasswordData({ current: "", new: "", confirm: "" });
+      setActiveModal(null);
+      if (globalShowToast) {
+        globalShowToast("Password changed successfully!", 3000, "success");
+      } else {
+        showToast("Password changed successfully!");
+      }
+    } catch (err: any) {
+      if (globalShowToast) {
+        globalShowToast(err.message || "An unexpected error occurred", 3000, "error");
+      } else {
+        showToast("An unexpected error occurred");
+      }
+    }
   };
 
   const handleAddPayment = () => {
@@ -162,15 +268,71 @@ export function ProfileScreen({
         showToast("Please fill all card details");
         return;
       }
+      const cleanNumber = paymentMethod.number.replace(/\s+/g, "");
+      if (cleanNumber.length < 12) {
+        showToast("Please enter a valid card number");
+        return;
+      }
+      const last4 = cleanNumber.slice(-4);
+      const brand = cleanNumber.startsWith("4") ? "VISA" : "MASTERCARD";
+      
+      const newCard = {
+        id: generateId(),
+        type: "credit",
+        brand,
+        number: `•••• •••• •••• ${last4}`,
+        expiry: paymentMethod.expiry,
+      };
+      
+      setSavedCards([...savedCards, newCard]);
+      showToast("Card added successfully!");
+      setPaymentMethod({ type: "card", number: "", name: "", expiry: "", upi: "" });
+      setActiveModal("savedCards");
     } else {
       if (!paymentMethod.upi) {
         showToast("Please enter UPI ID");
         return;
       }
+      if (!paymentMethod.upi.includes("@")) {
+        showToast("Please enter a valid UPI ID (e.g. name@upi)");
+        return;
+      }
+      
+      const newUpi = {
+        id: generateId(),
+        address: paymentMethod.upi.trim(),
+        status: "Linked",
+        isPrimary: false,
+      };
+      
+      setUpiHandles([...upiHandles, newUpi]);
+      showToast("UPI Handle added successfully!");
+      setPaymentMethod({ type: "card", number: "", name: "", expiry: "", upi: "" });
+      setActiveModal("upiDetails");
     }
-    setPaymentMethod({ type: "card", number: "", name: "", expiry: "", upi: "" });
-    setActiveModal(null);
-    showToast("Payment method added!");
+  };
+
+  const handleDeleteCard = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSavedCards(savedCards.filter((c) => c.id !== id));
+    showToast("Card deleted");
+  };
+
+  const handleDeleteUpi = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setUpiHandles(upiHandles.filter((u) => u.id !== id));
+    showToast("UPI ID deleted");
+  };
+
+  const handleSetPrimaryUpi = (id: string) => {
+    setUpiHandles(
+      upiHandles.map((u) => ({
+        ...u,
+        isPrimary: u.id === id,
+        status: u.id === id ? "Active" : "Linked",
+      }))
+    );
+    showToast("Primary UPI ID updated");
   };
 
   const handleDeleteAccount = () => {
@@ -198,14 +360,7 @@ export function ProfileScreen({
     { code: "GBP", name: "British Pound", symbol: "£" },
     { code: "JPY", name: "Japanese Yen", symbol: "¥" },
   ];
-  const budgetOptions = [
-    "₹50,000",
-    "₹1,00,000",
-    "₹1,60,000",
-    "₹2,00,000",
-    "₹3,00,000",
-    "₹5,00,000",
-  ];
+  const budgetOptions = [50000, 100000, 160000, 200000, 300000, 500000];
 
   const totalExpense = transactionHistory
     .filter((t) => t.type === "expense")
@@ -214,9 +369,9 @@ export function ProfileScreen({
   const totalCategories = new Set(transactionHistory.map((t) => t.category)).size + customCategories.length;
 
   const formatLargeNumber = (num: number) => {
-    if (num >= 100000) return `₹${(num / 100000).toFixed(1)}L`;
-    if (num >= 1000) return `₹${(num / 1000).toFixed(1)}K`;
-    return `₹${num.toLocaleString("en-IN")}`;
+    if (num >= 100000 && symbol === "₹") return `${symbol}${(num / 100000).toFixed(1)}L`;
+    if (num >= 1000) return `${symbol}${(num / 1000).toFixed(1)}K`;
+    return `${symbol}${formatRaw(num)}`;
   };
 
   const containerVariants = {
@@ -333,45 +488,60 @@ export function ProfileScreen({
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-4 flex items-center gap-4 rounded-3xl bg-gradient-to-br from-savings to-savings-soft p-5 shadow-lg shadow-savings/20"
+            className="mb-4 flex items-center gap-4 rounded-2xl bg-gradient-to-br from-savings to-indigo-600 p-5 shadow-xl shadow-savings/20 border border-savings/25"
             whileHover={{ scale: 1.01 }}
+            transition={{ type: "spring", stiffness: 300, damping: 20 }}
           >
-            <motion.div className="relative" whileHover={{ scale: 1.1 }}>
+            <motion.div className="relative" whileHover={{ scale: 1.05 }}>
               <motion.div
-                className="size-16 rounded-full bg-gradient-to-br from-white/30 to-white/10 backdrop-blur-sm flex items-center justify-center"
+                className="size-16 rounded-full bg-gradient-to-br from-white/30 to-white/10 backdrop-blur-md flex items-center justify-center border border-white/20"
                 animate={{
-                  scale: [1, 1.03, 1],
+                  scale: [1, 1.02, 1],
                 }}
-                transition={{ duration: 3, repeat: Infinity }}
+                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
               >
                 <span className="text-2xl font-extrabold text-white">
                   {profileData.name.charAt(0).toUpperCase()}
                 </span>
               </motion.div>
               <motion.div
-                className="absolute -right-1 -bottom-1 rounded-full bg-green-400 p-1.5"
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{ duration: 2, repeat: Infinity }}
+                className="absolute -right-1 -bottom-1 rounded-full bg-green-400 p-1.5 border border-white/20"
+                animate={{ scale: [1, 1.15, 1] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
               >
                 ✨
               </motion.div>
             </motion.div>
-            <div className="min-w-0">
-              <h3 className="truncate text-lg font-extrabold text-white">
+            <div className="min-w-0 flex-1">
+              <h3 className="truncate text-lg font-extrabold text-white leading-tight">
                 {profileData.name}
               </h3>
-              <p className="truncate text-sm font-medium text-white/80">
+              <p className="truncate text-xs font-semibold text-white/75 mt-0.5">
                 {profileData.email}
               </p>
-              <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold text-white">
+              <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-white/25 px-2 py-0.5 text-[9px] font-extrabold text-white tracking-wide uppercase">
                 <motion.span
-                  animate={{ rotate: [0, 10, -10, 0] }}
-                  transition={{ duration: 1, repeat: Infinity }}
+                  animate={{ rotate: [0, 8, -8, 0] }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
                 >
                   ⭐
                 </motion.span>
                 {user?.role === "admin" ? "Admin" : user?.createdAt ? "Member" : "Guest"}
               </span>
+            </div>
+            <div className="shrink-0 z-10">
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleMute();
+                }}
+                className="size-10 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-md flex items-center justify-center text-white border border-white/20 shadow-md transition-all duration-200"
+                aria-label={isMuted ? "Unmute sounds" : "Mute sounds"}
+              >
+                {isMuted ? <VolumeX className="size-5" /> : <Volume2 className="size-5" />}
+              </motion.button>
             </div>
           </motion.div>
         )}
@@ -390,6 +560,7 @@ export function ProfileScreen({
                 icon: TrendingDown,
                 iconColor: "text-expense",
                 color: "from-ds-canvas to-expense-soft/10 dark:from-ds-canvas-soft-2 dark:to-expense-soft/5",
+                hoverClass: "hover:border-expense/40 hover:shadow-[0_0_20px_rgba(238,0,0,0.12)]",
               },
               {
                 label: "Transactions",
@@ -397,6 +568,7 @@ export function ProfileScreen({
                 icon: ReceiptText,
                 iconColor: "text-savings",
                 color: "from-ds-canvas to-savings-soft/10 dark:from-ds-canvas-soft-2 dark:to-savings-soft/5",
+                hoverClass: "hover:border-savings/40 hover:shadow-[0_0_20px_rgba(121,40,202,0.12)]",
               },
               {
                 label: "Categories",
@@ -404,13 +576,15 @@ export function ProfileScreen({
                 icon: Tags,
                 iconColor: "text-income",
                 color: "from-ds-canvas to-income-soft/10 dark:from-ds-canvas-soft-2 dark:to-income-soft/5",
+                hoverClass: "hover:border-income/40 hover:shadow-[0_0_20px_rgba(0,112,243,0.12)]",
               },
             ].map((stat, i) => (
               <motion.div
                 key={i}
                 className={cn(
-                  "relative overflow-hidden rounded-2xl bg-gradient-to-br border border-border/50 dark:border-white/5 p-3 card-hover",
-                  stat.color
+                  "relative overflow-hidden rounded-2xl bg-gradient-to-br border border-border/50 dark:border-white/5 p-3 card-hover transition-all duration-300",
+                  stat.color,
+                  stat.hoverClass
                 )}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -433,9 +607,9 @@ export function ProfileScreen({
           </motion.div>
 
           <motion.div variants={itemVariants}>
-            <Card className="bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
+            <Card className="bg-white/80 dark:bg-[#111111]/90 border border-border/50 dark:border-white/5 shadow-soft dark:shadow-xl dark:shadow-black/35 backdrop-blur-md rounded-2xl hover:shadow-[0_0_30px_rgba(0,112,243,0.02)] transition-all duration-300">
               <CardContent className="p-3">
-                <p className="mb-2 text-xs font-extrabold text-muted-foreground px-2">
+                <p className="mb-2 text-[10px] font-extrabold text-muted-foreground/80 dark:text-muted-foreground/60 uppercase tracking-wider px-2">
                   Account
                 </p>
                 <div className="divide-y divide-border/80 dark:divide-white/5">
@@ -474,9 +648,9 @@ export function ProfileScreen({
           </motion.div>
 
           <motion.div variants={itemVariants}>
-            <Card className="bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
+            <Card className="bg-white/80 dark:bg-[#111111]/90 border border-border/50 dark:border-white/5 shadow-soft dark:shadow-xl dark:shadow-black/35 backdrop-blur-md rounded-2xl hover:shadow-[0_0_30px_rgba(0,112,243,0.02)] transition-all duration-300">
               <CardContent className="p-3">
-                <p className="mb-2 text-xs font-extrabold text-muted-foreground px-2">
+                <p className="mb-2 text-[10px] font-extrabold text-muted-foreground/80 dark:text-muted-foreground/60 uppercase tracking-wider px-2">
                   Preferences
                 </p>
                 <div className="divide-y divide-border/80 dark:divide-white/5">
@@ -522,10 +696,10 @@ export function ProfileScreen({
                   <SettingRow
                     icon={<CircleDollarSign className="size-5" />}
                     title="Monthly Budget"
-                    detail={`₹${monthlyBudget.toLocaleString("en-IN")} active`}
+                    detail={`${symbol}${formatRaw(monthlyBudget)} active`}
                     action={
                       <Badge variant="secondary" className="bg-primary/10 text-primary">
-                        ₹{monthlyBudget.toLocaleString("en-IN")}
+                        {symbol}{formatRaw(monthlyBudget)}
                       </Badge>
                     }
                     onClick={() => setActiveModal("budget")}
@@ -536,9 +710,9 @@ export function ProfileScreen({
           </motion.div>
 
           <motion.div variants={itemVariants}>
-            <Card className="bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
+            <Card className="bg-white/80 dark:bg-[#111111]/90 border border-border/50 dark:border-white/5 shadow-soft dark:shadow-xl dark:shadow-black/35 backdrop-blur-md rounded-2xl hover:shadow-[0_0_30px_rgba(0,112,243,0.02)] transition-all duration-300">
               <CardContent className="p-3">
-                <p className="mb-2 text-xs font-extrabold text-muted-foreground px-2">
+                <p className="mb-2 text-[10px] font-extrabold text-muted-foreground/80 dark:text-muted-foreground/60 uppercase tracking-wider px-2">
                   Payment Methods
                 </p>
                 <div className="divide-y divide-border/80 dark:divide-white/5">
@@ -547,6 +721,7 @@ export function ProfileScreen({
                     title="Saved Cards"
                     detail="2 cards added"
                     action={<Badge variant="outline" className="bg-transparent">2</Badge>}
+                    onClick={() => setActiveModal("savedCards")}
                   />
                   <SettingRow
                     icon={<WalletCards className="size-5" />}
@@ -557,6 +732,7 @@ export function ProfileScreen({
                         Active
                       </Badge>
                     }
+                    onClick={() => setActiveModal("upiDetails")}
                   />
                   <SettingRow
                     icon={<Plus className="size-5" />}
@@ -571,9 +747,9 @@ export function ProfileScreen({
           </motion.div>
 
           <motion.div variants={itemVariants}>
-            <Card className="bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
+            <Card className="bg-white/80 dark:bg-[#111111]/90 border border-border/50 dark:border-white/5 shadow-soft dark:shadow-xl dark:shadow-black/35 backdrop-blur-md rounded-2xl hover:shadow-[0_0_30px_rgba(0,112,243,0.02)] transition-all duration-300">
               <CardContent className="p-3">
-                <p className="mb-2 text-xs font-extrabold text-muted-foreground px-2">
+                <p className="mb-2 text-[10px] font-extrabold text-muted-foreground/80 dark:text-muted-foreground/60 uppercase tracking-wider px-2">
                   Support & Privacy
                 </p>
                 <div className="divide-y divide-border/80 dark:divide-white/5">
@@ -611,9 +787,9 @@ export function ProfileScreen({
           </motion.div>
 
           <motion.div variants={itemVariants}>
-            <Card className="bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
+            <Card className="bg-white/80 dark:bg-[#111111]/90 border border-border/50 dark:border-white/5 shadow-soft dark:shadow-xl dark:shadow-black/35 backdrop-blur-md rounded-2xl hover:shadow-[0_0_30px_rgba(238,0,0,0.05)] hover:border-red-500/25 transition-all duration-300">
               <CardContent className="p-3">
-                <p className="mb-2 text-xs font-extrabold text-muted-foreground px-2">
+                <p className="mb-2 text-[10px] font-extrabold text-red-500/80 dark:text-red-400/60 uppercase tracking-wider px-2">
                   Danger Zone
                 </p>
                 <div className="divide-y divide-border/80 dark:divide-white/5">
@@ -772,17 +948,17 @@ export function ProfileScreen({
             {activeModal === "budget" && (
               <ModalContent title="Monthly Budget" onClose={() => setActiveModal(null)}>
                 <div className="space-y-2">
-                  {budgetOptions.map((budget) => {
-                    const budgetValue = parseInt(budget.replace(/[^0-9]/g, ""));
+                  {budgetOptions.map((budgetValue) => {
+                    const displayBudget = `${symbol}${formatRaw(budgetValue)}`;
                     return (
                       <motion.button
-                        key={budget}
+                        key={budgetValue}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => {
                           setMonthlyBudget?.(budgetValue);
                           setActiveModal(null);
-                          showToast(`Budget set to ${budget}`);
+                          showToast(`Budget set to ${displayBudget}`);
                         }}
                         className={cn(
                           "w-full text-left px-4 py-3 rounded-xl font-semibold transition-all",
@@ -791,7 +967,7 @@ export function ProfileScreen({
                             : "bg-muted/50 hover:bg-muted dark:bg-white/5"
                         )}
                       >
-                        {budget}
+                        {displayBudget}
                       </motion.button>
                     );
                   })}
@@ -911,12 +1087,19 @@ export function ProfileScreen({
                       Response within 24 hours
                     </p>
                   </div>
-                  <div className="p-4 bg-muted/50 rounded-xl dark:bg-white/5">
-                    <p className="font-bold">Live Chat</p>
-                    <p className="text-sm text-muted-foreground">
-                      Available 9 AM - 9 PM
+                  <div className="p-4 bg-muted/50 rounded-xl dark:bg-white/5 border border-dashed border-border dark:border-[#333333] relative overflow-hidden">
+                    <div className="flex justify-between items-center mb-1">
+                      <p className="font-bold text-sm">Live Chat</p>
+                      <Badge variant="outline" className="text-[10px] uppercase font-mono px-1.5 py-0.5 bg-amber-500/10 text-amber-500 dark:text-amber-400 border-amber-500/20">
+                        Maintenance
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed mt-1">
+                      Our live chat service is temporarily down for scheduled maintenance. Please connect with us via email or try again later.
                     </p>
-                    <Button className="w-full mt-3">Start Chat</Button>
+                    <Button disabled className="w-full mt-3 h-9 text-xs font-semibold bg-muted dark:bg-[#222222] text-muted-foreground border border-border dark:border-[#333333] cursor-not-allowed">
+                      Offline for Maintenance
+                    </Button>
                   </div>
                 </div>
               </ModalContent>
@@ -971,6 +1154,126 @@ export function ProfileScreen({
                       Delete
                     </Button>
                   </div>
+                </div>
+              </ModalContent>
+            )}
+            {activeModal === "savedCards" && (
+              <ModalContent title="Saved Cards" onClose={() => setActiveModal(null)}>
+                <div className="space-y-4">
+                  {savedCards.length > 0 ? (
+                    savedCards.map((card) => (
+                      <div
+                        key={card.id}
+                        className={cn(
+                          "rounded-xl p-4 text-white shadow-level-3 relative overflow-hidden group border border-white/10",
+                          card.brand === "VISA"
+                            ? "bg-gradient-to-r from-slate-950 to-slate-900"
+                            : "bg-gradient-to-r from-indigo-950 to-indigo-900"
+                        )}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="text-[10px] uppercase tracking-widest text-white/60">
+                              {card.type === "debit" ? "Debit Card" : "Credit Card"}
+                            </p>
+                            <p className="text-xs font-bold text-white/50 mt-0.5">{card.brand}</p>
+                          </div>
+                          <button
+                            onClick={(e) => handleDeleteCard(card.id, e)}
+                            className="p-1 rounded-md text-white/60 hover:text-red-400 hover:bg-white/10 transition-all z-10 cursor-pointer"
+                            aria-label={`Delete ${card.brand} card ending in ${card.number.slice(-4)}`}
+                          >
+                            <Trash2 className="size-4" />
+                          </button>
+                        </div>
+                        <p className="mt-4 text-lg font-bold tracking-widest font-mono">{card.number}</p>
+                        <div className="mt-4 flex justify-between items-end">
+                          <div>
+                            <p className="text-[8px] uppercase text-white/50">Card Holder</p>
+                            <p className="text-xs font-bold">{profileData.name}</p>
+                          </div>
+                          <div>
+                            <p className="text-[8px] uppercase text-white/50">Expires</p>
+                            <p className="text-xs font-bold">{card.expiry}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-6 text-sm text-slate-500">No saved cards.</div>
+                  )}
+                  <Button
+                    onClick={() => setActiveModal("payment")}
+                    className="w-full mt-2 bg-black dark:bg-white text-white dark:text-black hover:bg-black/90 dark:hover:bg-white/90"
+                  >
+                    + Add New Card
+                  </Button>
+                </div>
+              </ModalContent>
+            )}
+            {activeModal === "upiDetails" && (
+              <ModalContent title="UPI Handles" onClose={() => setActiveModal(null)}>
+                <div className="space-y-3">
+                  {upiHandles.length > 0 ? (
+                    upiHandles.map((upi) => (
+                      <div
+                        key={upi.id}
+                        onClick={() => handleSetPrimaryUpi(upi.id)}
+                        className={cn(
+                          "p-4 rounded-xl flex items-center justify-between border transition-all cursor-pointer",
+                          upi.isPrimary
+                            ? "bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-level-2"
+                            : "bg-[#fafafa] dark:bg-[#121212] border-border dark:border-[#333333] hover:border-slate-400 dark:hover:border-slate-600 text-foreground"
+                        )}
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-sm">
+                            {upi.isPrimary ? "Primary UPI ID" : "Secondary UPI ID"}
+                          </p>
+                          <p
+                            className={cn(
+                              "text-xs mt-0.5 font-mono truncate",
+                              upi.isPrimary ? "text-white/80 dark:text-black/80" : "text-slate-500 dark:text-slate-400"
+                            )}
+                          >
+                            {upi.address}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <span
+                            className={cn(
+                              "text-[9px] font-bold px-2 py-0.5 rounded-full",
+                              upi.isPrimary
+                                ? "bg-white/20 text-white dark:bg-black/10 dark:text-black"
+                                : "bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
+                            )}
+                          >
+                            {upi.status}
+                          </span>
+                          <button
+                            onClick={(e) => handleDeleteUpi(upi.id, e)}
+                            className={cn(
+                              "p-1 rounded transition-colors cursor-pointer",
+                              upi.isPrimary
+                                ? "text-white/60 hover:text-red-300 hover:bg-white/10 dark:text-black/60 dark:hover:text-red-600 dark:hover:bg-black/5"
+                                : "text-slate-400 hover:text-red-500 hover:bg-slate-100 dark:hover:bg-white/5"
+                            )}
+                            aria-label={`Delete UPI ID ${upi.address}`}
+                          >
+                            <Trash2 className="size-4.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-6 text-sm text-slate-500">No UPI handles configured.</div>
+                  )}
+                  <Button
+                    onClick={() => setActiveModal("payment")}
+                    className="w-full mt-2 bg-black dark:bg-white text-white dark:text-black hover:bg-black/90 dark:hover:bg-white/90"
+                  >
+                    + Add New UPI Handle
+                  </Button>
                 </div>
               </ModalContent>
             )}

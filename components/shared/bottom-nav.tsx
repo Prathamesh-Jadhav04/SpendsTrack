@@ -11,6 +11,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { Screen } from "@/components/types";
 import { APP_VERSION } from "@/components/constants";
+import { useTranslation } from "@/components/hooks";
 
 const navItems = [
   { label: "Home", icon: Home },
@@ -45,6 +46,7 @@ export function BottomNav({
   active: string;
   onNavigate: (screen: Screen) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <>
       <nav
@@ -68,7 +70,7 @@ export function BottomNav({
               aria-label={item.label}
             >
               <Icon className="size-5" strokeWidth={isActive ? 2.5 : 2} />
-              <span className="truncate">{item.label}</span>
+              <span className="truncate">{t(item.label.toLowerCase())}</span>
             </button>
           );
         })}
@@ -110,7 +112,7 @@ export function BottomNav({
                 aria-label={item.label}
               >
                 <Icon className="size-5" strokeWidth={isActive ? 2.5 : 2} />
-                <span>{item.label}</span>
+                <span>{t(item.label.toLowerCase())}</span>
                 {isActive && (
                   <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" aria-hidden="true" />
                 )}

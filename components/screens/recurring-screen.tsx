@@ -10,8 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { expenseCategories, incomeCategories } from "@/components/constants";
-import { cn } from "@/lib/utils";
+import { cn, parseAmount } from "@/lib/utils";
 import type { Recurring, Screen } from "@/components/types";
+import { useCurrency } from "@/components/hooks";
 
 interface RecurringScreenProps {
   onNavigate: (screen: Screen) => void;
@@ -21,6 +22,7 @@ interface RecurringScreenProps {
 }
 
 export function RecurringScreen({ onNavigate, recurring, onAddRecurring, onDeleteRecurring }: RecurringScreenProps) {
+  const { symbol, formatRaw } = useCurrency();
   const [showAddModal, setShowAddModal] = useState(false);
   const [newRecurring, setNewRecurring] = useState({ title: "", amount: 0, category: "food", frequency: "monthly" as "daily" | "weekly" | "monthly", type: "expense" as "expense" | "income" });
 
@@ -71,7 +73,7 @@ export function RecurringScreen({ onNavigate, recurring, onAddRecurring, onDelet
                 </div>
                 <div className="mt-3 flex justify-between items-center">
                   <span className={cn("font-extrabold text-lg tabular-money", item.type === "income" ? "text-income" : "text-expense")}>
-                    {item.type === "income" ? "+" : "-"}₹{item.amount.toLocaleString("en-IN")}
+                    {item.type === "income" ? "+" : "-"}{symbol}{formatRaw(item.amount)}
                   </span>
                   <span className="text-xs text-muted-foreground">Next: {new Date(item.nextDate).toLocaleDateString("en-IN")}</span>
                 </div>
@@ -105,13 +107,24 @@ export function RecurringScreen({ onNavigate, recurring, onAddRecurring, onDelet
                 <Input
                   type="number"
                   value={newRecurring.amount || ""}
-                  onChange={(e) => setNewRecurring(r => ({ ...r, amount: parseInt(e.target.value) || 0 }))}
+                  onChange={(e) => setNewRecurring(r => ({ ...r, amount: parseAmount(e.target.value) }))}
                   placeholder="Enter amount"
                 />
               </Field>
               <Field label="Type">
-                <Select value={newRecurring.type} onValueChange={(v: "expense" | "income") => setNewRecurring(r => ({ ...r, type: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select
+                  value={newRecurring.type}
+                  onValueChange={(v: "expense" | "income") =>
+                    setNewRecurring((r) => ({
+                      ...r,
+                      type: v,
+                      category: v === "expense" ? "food" : "salary",
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="expense">Expense</SelectItem>
                     <SelectItem value="income">Income</SelectItem>
@@ -119,10 +132,25 @@ export function RecurringScreen({ onNavigate, recurring, onAddRecurring, onDelet
                 </Select>
               </Field>
               <Field label="Category">
-                <Select value={newRecurring.category} onValueChange={(v) => setNewRecurring(r => ({ ...r, category: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select
+                  value={newRecurring.category}
+                  onValueChange={(v) => setNewRecurring((r) => ({ ...r, category: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
-                    {allCategories.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                    {newRecurring.type === "expense"
+                      ? expenseCategories.map((c) => (
+                          <SelectItem key={c.value} value={c.value}>
+                            {c.label}
+                          </SelectItem>
+                        ))
+                      : incomeCategories.map((c) => (
+                          <SelectItem key={c.value} value={c.value}>
+                            {c.label}
+                          </SelectItem>
+                        ))}
                   </SelectContent>
                 </Select>
               </Field>

@@ -201,12 +201,18 @@
       radial-gradient(ellipse 40% 30% at 60% 80%, #f9cb2822, transparent);
   }
 
-  /* ── Brand Card Gradient ──────────────────────────────────── */
+  /* ── Brand Card Gradient (Vercel stark dark with mesh accent) ── */
   .brand-card-gradient {
-    background: linear-gradient(135deg, var(--ds-ink) 0%, #0d9973 50%, #0b6c59 100%);
+    background: radial-gradient(circle at top right, rgba(0, 124, 240, 0.15) 0%, transparent 60%),
+                radial-gradient(circle at bottom left, rgba(121, 40, 202, 0.08) 0%, transparent 50%),
+                #171717;
+    border: 1px solid rgba(255, 255, 255, 0.1);
   }
   .dark .brand-card-gradient {
-    background: linear-gradient(135deg, var(--income) 0%, #0d9973 50%, #085544 100%);
+    background: radial-gradient(circle at top right, rgba(0, 124, 240, 0.18) 0%, transparent 60%),
+                radial-gradient(circle at bottom left, rgba(255, 0, 128, 0.08) 0%, transparent 50%),
+                #0a0a0a;
+    border: 1px solid rgba(255, 255, 255, 0.08);
   }
 
   /* ── Typography tokens ────────────────────────────────────── */
@@ -759,5 +765,13 @@
   .glass-effect {
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
+  }
+
+  /* Hide default cursor on desktop when custom cursor is active */
+  @media (hover: hover) and (pointer: fine) {
+    .custom-cursor-active,
+    .custom-cursor-active * {
+      cursor: none !important;
+    }
   }
 }

@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import type { ToastType } from "@/components/types";
+import { sound } from "@/lib/sound";
 
 export function useToast() {
   const [toast, setToast] = useState<string | null>(null);
@@ -13,6 +14,9 @@ export function useToast() {
     ) => {
       setToast(message);
       setToastType(type);
+      if (type === "success") {
+        sound.playSuccess();
+      }
       setTimeout(() => setToast(null), duration);
     },
     []

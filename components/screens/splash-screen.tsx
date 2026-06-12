@@ -20,11 +20,11 @@ export function SplashScreen() {
           <BrandMark />
         </motion.div>
         <div className="space-y-2">
-          <h1 className="text-4xl font-extrabold tracking-normal bg-gradient-to-r from-primary to-income bg-clip-text text-transparent">
-            SpendsTracks
+          <h1 className="text-4xl font-semibold tracking-[-0.06em] bg-gradient-to-r from-[#007cf0] via-[#7928ca] to-[#ff0080] bg-clip-text text-transparent">
+            SpendsTracks.
           </h1>
-          <p className="text-base font-semibold text-muted-foreground">
-            Money clarity, made simple.
+          <p className="text-sm font-medium text-muted-foreground uppercase tracking-widest font-mono">
+            Money clarity, made simple
           </p>
         </div>
         <motion.div

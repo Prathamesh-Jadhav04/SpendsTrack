@@ -10,8 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { expenseCategories, incomeCategories } from "@/components/constants";
-import { cn } from "@/lib/utils";
+import { cn, parseAmount } from "@/lib/utils";
 import type { CustomCategory, Screen, CategoryInfo } from "@/components/types";
+import { useCurrency, useTranslation } from "@/components/hooks";
 
 interface CategoriesScreenProps {
   onNavigate: (screen: Screen) => void;
@@ -32,6 +33,8 @@ export function CategoriesScreen({
   categoryBudgets,
   onSetCategoryBudget,
 }: CategoriesScreenProps) {
+  const { symbol, formatRaw } = useCurrency();
+  const { t } = useTranslation();
   const [showAddModal, setShowAddModal] = useState(false);
   const [showBudgetModal, setShowBudgetModal] = useState(false);
   const [selectedBudgetCat, setSelectedBudgetCat] = useState<string | null>(null);
@@ -92,7 +95,7 @@ export function CategoriesScreen({
                       </div>
                       <span className="text-[11px] font-semibold mt-1.5 truncate w-full">{cat.label || cat.value}</span>
                       {budget ? (
-                        <span className="text-[9px] font-bold text-primary mt-0.5">₹{budget.toLocaleString("en-IN")}</span>
+                        <span className="text-[9px] font-bold text-primary mt-0.5">{symbol}{formatRaw(budget)}</span>
                       ) : (
                         <span className="text-[9px] text-muted-foreground/50 mt-0.5 italic">No budget</span>
                       )}
@@ -164,12 +167,12 @@ export function CategoriesScreen({
         <ModalOverlay onClose={() => setShowBudgetModal(false)}>
           <ModalContent title={`Set Budget for ${selectedBudgetCat.charAt(0).toUpperCase() + selectedBudgetCat.slice(1)}`} onClose={() => setShowBudgetModal(false)}>
             <div className="space-y-4">
-              <Field label="Monthly Budget Limit (₹)">
+              <Field label={`Monthly Budget Limit (${symbol})`}>
                 <Input
                   type="number"
                   value={budgetAmount}
                   onChange={(e) => setBudgetAmount(e.target.value)}
-                  placeholder="Enter budget limit in ₹"
+                  placeholder={`Enter budget limit in ${symbol}`}
                   autoFocus
                 />
               </Field>
@@ -187,8 +190,8 @@ export function CategoriesScreen({
                 <Button
                   className="flex-1 rounded-xl bg-primary hover:bg-primary/95 text-white"
                   onClick={() => {
-                    const amt = parseInt(budgetAmount);
-                    if (!isNaN(amt) && amt >= 0) {
+                    const amt = parseAmount(budgetAmount);
+                    if (amt >= 0) {
                       onSetCategoryBudget(selectedBudgetCat, amt);
                       setShowBudgetModal(false);
                     }

@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
+import { cn, parseAmount } from "@/lib/utils";
 import { PhoneFrame, ScreenHeader, Field } from "@/components/shared";
 import type { Screen } from "@/components/types";
 import { expenseCategories, incomeCategories } from "@/components/constants";
@@ -43,7 +43,8 @@ export function AddTransactionScreen({ onNavigate, onSave, type: initialType }: 
     e.preventDefault();
     setError("");
 
-    if (!amount || parseFloat(amount) <= 0) {
+    const parsedAmount = parseAmount(amount);
+    if (!amount || parsedAmount <= 0) {
       setError("Please enter a valid amount greater than 0");
       document.getElementById("amount")?.focus();
       return;
@@ -58,7 +59,7 @@ export function AddTransactionScreen({ onNavigate, onSave, type: initialType }: 
     setIsSaving(true);
     await new Promise((resolve) => setTimeout(resolve, 300));
     onSave({
-      amount,
+      amount: parsedAmount.toString(),
       category,
       date,
       notes,

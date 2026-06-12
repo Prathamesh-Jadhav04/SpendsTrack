@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { Screen, Transaction, Goal, Recurring } from "@/components/types";
 import { categoryTitles } from "@/components/constants";
+import { useCurrency } from "@/components/hooks";
 
 interface AskAIScreenProps {
   onNavigate: (screen: Screen) => void;
@@ -36,6 +37,7 @@ export function AskAIScreen({
   monthlyBudget,
   categoryBudgets,
 }: AskAIScreenProps) {
+  const { symbol, formatRaw } = useCurrency();
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "welcome",
@@ -46,12 +48,37 @@ export function AskAIScreen({
   ]);
   const [inputText, setInputText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [typingStatus, setTypingStatus] = useState("Analyzing transaction history...");
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   // Auto-scroll chat to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
+
+  // Rotate typing status labels
+  useEffect(() => {
+    if (!isTyping) {
+      setTypingStatus("Analyzing transaction history...");
+      return;
+    }
+
+    const statuses = [
+      "Analyzing transaction history...",
+      "Auditing budget constraints...",
+      "Evaluating goals milestones...",
+      "Projecting savings rates...",
+      "Drafting financial recommendations..."
+    ];
+
+    let currentIdx = 0;
+    const interval = setInterval(() => {
+      currentIdx = (currentIdx + 1) % statuses.length;
+      setTypingStatus(statuses[currentIdx]);
+    }, 1500);
+
+    return () => clearInterval(interval);
+  }, [isTyping]);
 
   // Dynamically analyze user financial metrics
   const financialStats = useMemo(() => {
@@ -125,12 +152,12 @@ export function AskAIScreen({
 
       const reply = `### 📊 Spending Habits Analysis
 
-• **Total Earned:** ₹${financialStats.totalIncome.toLocaleString("en-IN")}
-• **Total Spent:** ₹${financialStats.totalExpenses.toLocaleString("en-IN")}
-• **Net Savings:** ₹${financialStats.netSavings.toLocaleString("en-IN")}
+• **Total Earned:** ${symbol}${formatRaw(financialStats.totalIncome)}
+• **Total Spent:** ${symbol}${formatRaw(financialStats.totalExpenses)}
+• **Net Savings:** ${symbol}${formatRaw(financialStats.netSavings)}
 • **Savings Rate:** ${financialStats.savingsRate}%
 
-Your highest spending category is **${financialStats.topCategoryLabel}**, where you spent **₹${financialStats.topCategoryAmount.toLocaleString("en-IN")}**.
+Your highest spending category is **${financialStats.topCategoryLabel}**, where you spent **${symbol}${formatRaw(financialStats.topCategoryAmount)}**.
 
 **Advisor Recommendation:** ${advice}`;
 
@@ -154,9 +181,9 @@ Your highest spending category is **${financialStats.topCategoryLabel}**, where 
         const months = Math.max(1, Math.round(days / 30));
         const neededPerMonth = remaining > 0 ? Math.round(remaining / months) : 0;
 
-        goalsReport += `• **${goal.name}:** Completed **${pct.toFixed(0)}%** (₹${goal.current.toLocaleString("en-IN")} of ₹${goal.target.toLocaleString("en-IN")}).
+        goalsReport += `• **${goal.name}:** Completed **${pct.toFixed(0)}%** (${symbol}${formatRaw(goal.current)} of ${symbol}${formatRaw(goal.target)}).
   * *Deadline:* ${new Date(goal.deadline).toLocaleDateString("en-IN")} (${days > 0 ? `${days} days left` : "past due"})
-  * *Required Contribution:* Save **₹${neededPerMonth.toLocaleString("en-IN")}/month** to hit your target.
+  * *Required Contribution:* Save **${symbol}${formatRaw(neededPerMonth)}/month** to hit your target.
 \n`;
       });
 
@@ -178,15 +205,15 @@ Your highest spending category is **${financialStats.topCategoryLabel}**, where 
 
       let budgetReport = `### 📋 Budget Tracking Report
 
-• **Monthly Budget Limit:** ₹${totalBudget.toLocaleString("en-IN")}
-• **Total Month Expenses:** ₹${totalSpent.toLocaleString("en-IN")}
+• **Monthly Budget Limit:** ${symbol}${formatRaw(totalBudget)}
+• **Total Month Expenses:** ${symbol}${formatRaw(totalSpent)}
 • **Budget Exhaustion:** **${overallUsed}%**
 \n`;
 
       if (financialStats.exceededCategories.length > 0) {
         budgetReport += `⚠️ **Over-budget Categories:**\n`;
         financialStats.exceededCategories.forEach((cat) => {
-          budgetReport += `• **${cat.category}:** Spent ₹${cat.spent.toLocaleString("en-IN")} (Limit: ₹${cat.budget.toLocaleString("en-IN")}) — **₹${(cat.spent - cat.budget).toLocaleString("en-IN")} over budget**\n`;
+          budgetReport += `• **${cat.category}:** Spent ${symbol}${formatRaw(cat.spent)} (Limit: ${symbol}${formatRaw(cat.budget)}) — **${symbol}${formatRaw(cat.spent - cat.budget)} over budget**\n`;
         });
       } else {
         budgetReport += `✅ **All category budgets are within limits.** Nice tracking!\n`;
@@ -223,13 +250,13 @@ You have **${recurring.length}** active recurring expense items:
 \n`;
 
       recurring.forEach((sub) => {
-        subReport += `• **${sub.title}:** ₹${sub.amount.toLocaleString("en-IN")} / ${sub.frequency} (Category: ${categoryTitles[sub.category] || sub.category})\n`;
+        subReport += `• **${sub.title}:** ${symbol}${formatRaw(sub.amount)} / ${sub.frequency} (Category: ${categoryTitles[sub.category] || sub.category})\n`;
       });
 
-      subReport += `\n• **Monthly Recurring Burden:** ₹${monthlyCost.toLocaleString("en-IN")}
-• **Projected Annual Cost:** **₹${annualCost.toLocaleString("en-IN")} / year**
+      subReport += `\n• **Monthly Recurring Burden:** ${symbol}${formatRaw(monthlyCost)}
+• **Projected Annual Cost:** **${symbol}${formatRaw(annualCost)} / year**
 \n
-**Advisor Recommendation:** Check if you still actively use these subscriptions. Canceling even a single ₹500/month entertainment platform returns ₹6,000 back to your yearly savings!`;
+**Advisor Recommendation:** Check if you still actively use these subscriptions. Canceling even a single ${symbol}${formatRaw(500)}/month entertainment platform returns ${symbol}${formatRaw(6000)} back to your yearly savings!`;
 
       return { reply: subReport, type: "subscriptions" };
     }
@@ -248,16 +275,16 @@ You have **${recurring.length}** active recurring expense items:
 
 Thanks for your query. Here is a quick review of your active account stats:
 
-• **Income vs. Spends:** Earned ₹${financialStats.totalIncome.toLocaleString("en-IN")} and spent ₹${financialStats.totalExpenses.toLocaleString("en-IN")} (Net savings: ₹${financialStats.netSavings.toLocaleString("en-IN")}).
-• **Budget Alert:** You have utilized **${(financialStats.totalExpenses / (monthlyBudget || 1) * 100).toFixed(0)}%** of your ₹${monthlyBudget.toLocaleString("en-IN")} global budget limit.
-• **Top Spend:** Your highest outgo is under **${financialStats.topCategoryLabel}** (₹${financialStats.topCategoryAmount.toLocaleString("en-IN")}).
+• **Income vs. Spends:** Earned ${symbol}${formatRaw(financialStats.totalIncome)} and spent ${symbol}${formatRaw(financialStats.totalExpenses)} (Net savings: ${symbol}${formatRaw(financialStats.netSavings)}).
+• **Budget Alert:** You have utilized **${(financialStats.totalExpenses / (monthlyBudget || 1) * 100).toFixed(0)}%** of your ${symbol}${formatRaw(monthlyBudget)} global budget limit.
+• **Top Spend:** Your highest outgo is under **${financialStats.topCategoryLabel}** (${symbol}${formatRaw(financialStats.topCategoryAmount)}).
 
 Please ask a specific question (e.g., about budgets, goals, or subscriptions) for a deep-dive analysis!`,
       type: "general",
     };
   };
 
-  const handleSendMessage = (text: string) => {
+  const handleSendMessage = async (text: string) => {
     if (!text.trim()) return;
 
     const userMsg: ChatMessage = {
@@ -267,23 +294,53 @@ Please ask a specific question (e.g., about budgets, goals, or subscriptions) fo
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, userMsg]);
+    const updatedMessages = [...messages, userMsg];
+    setMessages(updatedMessages);
     setInputText("");
     setIsTyping(true);
 
-    // Simulated thinking and typing latency
-    setTimeout(() => {
-      const response = getAIResponse(text);
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messages: updatedMessages,
+          context: {
+            transactions,
+            goals,
+            recurring,
+            monthlyBudget,
+            categoryBudgets,
+          },
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to contact advisor server.");
+      }
+
+      const data = await res.json();
       const aiMsg: ChatMessage = {
         id: Math.random().toString(),
         sender: "ai",
-        text: response.reply,
+        text: data.reply,
         timestamp: new Date(),
-        insightType: response.type,
       };
       setMessages((prev) => [...prev, aiMsg]);
+    } catch (error: any) {
+      console.error(error);
+      const errorMsg: ChatMessage = {
+        id: Math.random().toString(),
+        sender: "ai",
+        text: "### ⚠️ Advisor Connection Error\n\nI was unable to analyze your finances at this moment. Please check your internet connection or server configurations.",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMsg]);
+    } finally {
       setIsTyping(false);
-    }, 1200);
+    }
   };
 
   return (
@@ -381,10 +438,15 @@ Please ask a specific question (e.g., about budgets, goals, or subscriptions) fo
                   <div className="size-8 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-500 flex items-center justify-center text-white shadow-sm shrink-0">
                     <Bot className="size-4" />
                   </div>
-                  <div className="p-3 bg-white/95 dark:bg-card border border-border/80 rounded-2xl rounded-tl-none shadow-level-2 flex items-center gap-1">
-                    <span className="size-1.5 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                    <span className="size-1.5 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                    <span className="size-1.5 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                  <div className="p-3 bg-white/95 dark:bg-card border border-border/80 rounded-2xl rounded-tl-none shadow-level-2 flex flex-col gap-1.5 min-w-[200px]">
+                    <div className="flex items-center gap-1">
+                      <span className="size-1.5 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                      <span className="size-1.5 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                      <span className="size-1.5 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                    </div>
+                    <span className="text-[10px] text-muted-foreground font-semibold italic animate-pulse">
+                      {typingStatus}
+                    </span>
                   </div>
                 </motion.div>
               )}

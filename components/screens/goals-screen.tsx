@@ -8,8 +8,9 @@ import { PhoneFrame, ScreenHeader, Field, ModalOverlay, ModalContent, ProgressBa
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn, parseAmount } from "@/lib/utils";
 import type { Goal, Screen } from "@/components/types";
+import { useCurrency, useTranslation } from "@/components/hooks";
 
 interface GoalsScreenProps {
   onNavigate: (screen: Screen) => void;
@@ -20,6 +21,8 @@ interface GoalsScreenProps {
 }
 
 export function GoalsScreen({ onNavigate, goals, onAddGoal, onUpdateProgress, onDeleteGoal }: GoalsScreenProps) {
+  const { symbol, formatRaw } = useCurrency();
+  const { t } = useTranslation();
   const [showAddModal, setShowAddModal] = useState(false);
   const [showFundModal, setShowFundModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -38,8 +41,9 @@ export function GoalsScreen({ onNavigate, goals, onAddGoal, onUpdateProgress, on
   };
 
   const handleAddFunds = () => {
-    if (fundGoalId && fundAmount && parseInt(fundAmount) > 0) {
-      onUpdateProgress(fundGoalId, parseInt(fundAmount));
+    const parsedAmt = parseAmount(fundAmount);
+    if (fundGoalId && fundAmount && parsedAmt > 0) {
+      onUpdateProgress(fundGoalId, parsedAmt);
       setShowFundModal(false);
       setFundGoalId(null);
       setFundAmount("");
@@ -82,7 +86,7 @@ export function GoalsScreen({ onNavigate, goals, onAddGoal, onUpdateProgress, on
                   <div className="flex justify-between items-start mb-3">
                     <div>
                       <h4 className="font-extrabold text-base">{goal.name}</h4>
-                      <p className="text-xs text-muted-foreground">Target: ₹{goal.target.toLocaleString("en-IN")}</p>
+                      <p className="text-xs text-muted-foreground">Target: {symbol}{formatRaw(goal.target)}</p>
                     </div>
                     <button
                       onClick={() => { setDeleteGoalId(goal.id); setShowDeleteModal(true); }}
@@ -95,11 +99,11 @@ export function GoalsScreen({ onNavigate, goals, onAddGoal, onUpdateProgress, on
                   <ProgressBar value={progress} className="mb-2" />
 
                   <div className="flex justify-between text-sm">
-                    <span className="font-semibold text-muted-foreground">₹{goal.current.toLocaleString("en-IN")}</span>
+                    <span className="font-semibold text-muted-foreground">{symbol}{formatRaw(goal.current)}</span>
                     <span className="font-bold" style={{ color: goal.color }}>{progress.toFixed(0)}%</span>
                   </div>
 
-                  <p className="text-xs text-muted-foreground mt-2">₹{remaining.toLocaleString("en-IN")} remaining</p>
+                  <p className="text-xs text-muted-foreground mt-2">{symbol}{formatRaw(remaining)} remaining</p>
                   <p className="text-xs text-muted-foreground">Due: {new Date(goal.deadline).toLocaleDateString("en-IN")}</p>
 
                   <Button
@@ -143,7 +147,7 @@ export function GoalsScreen({ onNavigate, goals, onAddGoal, onUpdateProgress, on
                 <Input
                   type="number"
                   value={newGoal.target}
-                  onChange={(e) => setNewGoal(g => ({ ...g, target: parseInt(e.target.value) || 0 }))}
+                  onChange={(e) => setNewGoal(g => ({ ...g, target: parseAmount(e.target.value) }))}
                 />
               </Field>
               <Field label="Deadline">

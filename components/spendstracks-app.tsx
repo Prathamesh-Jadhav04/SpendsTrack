@@ -5,8 +5,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Check, AlertCircle, Zap, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast, useNavigation, useAuth, useAppData } from "@/components/hooks";
-import { BottomNav } from "@/components/shared";
-import { LoginScreen, SignUpScreen } from "@/components/auth";
+import { BottomNav, CustomCursor } from "@/components/shared";
+import { LoginScreen, SignUpScreen, ResetPasswordScreen } from "@/components/auth";
 import {
   SplashScreen,
   DashboardScreen,
@@ -28,6 +28,7 @@ export function SpendsTracksApp() {
   const {
     currentScreen,
     setCurrentScreen,
+    prevScreen,
     handleScreenChange,
     handleNavigation,
     getDirection,
@@ -99,7 +100,7 @@ export function SpendsTracksApp() {
     }
   }, [currentScreen, setCurrentScreen, isLoadingSession, isLoggedIn]);
 
-  const isAuthScreen = currentScreen === "splash" || currentScreen === "login" || currentScreen === "signup";
+  const isAuthScreen = currentScreen === "splash" || currentScreen === "login" || currentScreen === "signup" || currentScreen === "reset-password";
 
   const getScreenComponent = (screen: Screen) => {
     switch (screen) {
@@ -124,6 +125,11 @@ export function SpendsTracksApp() {
             isAdmin={user?.role === "admin"}
             isLoading={isLoading}
             categoryBudgets={categoryBudgets}
+            monthlyBudget={monthlyBudget}
+            onTransactionClick={(t) => {
+              setSelectedTransaction(t);
+              handleScreenChange("transaction-detail");
+            }}
           />
         );
       case "add-expense":
@@ -165,6 +171,13 @@ export function SpendsTracksApp() {
               onNavigate={handleNavigation}
               onDelete={handleDeleteTransaction}
               onEdit={handleEditTransaction}
+              onBack={() => {
+                if (prevScreen && prevScreen !== "splash" && prevScreen !== "transaction-detail") {
+                  handleScreenChange(prevScreen);
+                } else {
+                  handleScreenChange("dashboard");
+                }
+              }}
             />
           );
         }
@@ -183,7 +196,7 @@ export function SpendsTracksApp() {
         return (
           <AnalyticsScreen
             onNavigate={handleNavigation}
-            transactions={[...transactions, ...transactionHistory]}
+            transactions={transactions}
             monthlyBudget={monthlyBudget}
             categoryBudgets={categoryBudgets}
             onExport={exportToCSV}
@@ -212,7 +225,7 @@ export function SpendsTracksApp() {
         return (
           <ReportsScreen
             onNavigate={handleNavigation}
-            transactions={[...transactions, ...transactionHistory]}
+            transactions={transactions}
           />
         );
       case "categories":
@@ -246,11 +259,18 @@ export function SpendsTracksApp() {
         return (
           <AskAIScreen
             onNavigate={handleNavigation}
-            transactions={[...transactions, ...transactionHistory]}
+            transactions={transactions}
             goals={goals}
             recurring={recurring}
             monthlyBudget={monthlyBudget}
             categoryBudgets={categoryBudgets}
+          />
+        );
+      case "reset-password":
+        return (
+          <ResetPasswordScreen
+            onResetComplete={() => setCurrentScreen("dashboard")}
+            showToast={showToast}
           />
         );
       default:
@@ -269,8 +289,8 @@ export function SpendsTracksApp() {
       case "goals":
       case "recurring":
       case "reports":
-      case "categories":
-      case "ask-ai": return "Insights";
+      case "categories": return "Insights";
+      case "ask-ai": return "Ask AI";
       case "profile": return "Profile";
       default: return "Home";
     }
@@ -278,6 +298,7 @@ export function SpendsTracksApp() {
 
   return (
     <main className="soft-page-bg min-h-dvh">
+      <CustomCursor />
       {/* Skip to content link for keyboard users */}
       <a
         href="#main-content"
@@ -292,19 +313,19 @@ export function SpendsTracksApp() {
         tabIndex={-1}
         className={cn(
           "flex flex-col items-center w-full min-h-screen",
-          isAuthScreen ? "p-4" : "justify-center p-0 pt-0 lg:ml-64 lg:w-[calc(100%-16rem)] lg:p-8 lg:pt-10"
+          isAuthScreen ? "p-0" : "justify-center p-0 pt-0 lg:ml-64 lg:w-[calc(100%-16rem)] lg:p-8 lg:pt-10"
         )}
       >
         <div className={cn(
           "w-full",
-          isAuthScreen ? "max-w-md my-auto" : "max-w-full lg:max-w-6xl"
+          isAuthScreen ? "max-w-full" : "max-w-full lg:max-w-6xl"
         )}>
           <AnimatePresence mode="wait">
             <motion.div
               key={currentScreen}
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: isAuthScreen ? 0 : 10 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
+              exit={{ opacity: 0, y: isAuthScreen ? 0 : -10 }}
               transition={{ duration: 0.2, ease: "easeInOut" }}
               className="w-full"
             >

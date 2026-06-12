@@ -16,6 +16,7 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { PhoneFrame, ScreenHeader, EmptyState, ProgressBar } from "@/components/shared";
 import type { Screen, Transaction } from "@/components/types";
+import { useCurrency, useTranslation } from "@/components/hooks";
 import { expenseCategories } from "@/components/constants";
 
 interface AnalyticsScreenProps {
@@ -29,6 +30,8 @@ interface AnalyticsScreenProps {
 type TimeRange = "week" | "month" | "quarter" | "year" | "all";
 
 export function AnalyticsScreen({ onNavigate, transactions, monthlyBudget = 160000, categoryBudgets, onExport }: AnalyticsScreenProps) {
+  const { symbol, formatRaw } = useCurrency();
+  const { t } = useTranslation();
   const [timeRange, setTimeRange] = useState<TimeRange>("month");
 
   const getDateRange = useMemo(() => {
@@ -183,9 +186,9 @@ export function AnalyticsScreen({ onNavigate, transactions, monthlyBudget = 1600
               className="rounded-2xl bg-gradient-to-br from-ds-canvas to-income-soft/10 p-3 dark:from-ds-canvas-soft-2 dark:to-income-soft/5 card-hover"
               whileHover={{ scale: 1.02 }}
             >
-              <p className="text-[10px] font-semibold text-income">Income</p>
+              <p className="text-[10px] font-semibold text-income">{t("income")}</p>
               <p className="mt-1 text-lg font-extrabold text-income dark:text-white tabular-money">
-                ₹{totalIncome >= 100000 ? `${(totalIncome / 100000).toFixed(1)}L` : totalIncome.toLocaleString("en-IN")}
+                {symbol}{totalIncome >= 100000 && symbol === "₹" ? `${(totalIncome / 100000).toFixed(1)}L` : formatRaw(totalIncome)}
               </p>
               <p className="text-[10px] font-medium text-income/70">
                 {filteredTransactions.filter((t) => t.type === "income").length} txns
@@ -195,9 +198,9 @@ export function AnalyticsScreen({ onNavigate, transactions, monthlyBudget = 1600
               className="rounded-2xl bg-gradient-to-br from-ds-canvas to-expense-soft/10 p-3 dark:from-ds-canvas-soft-2 dark:to-expense-soft/5 card-hover"
               whileHover={{ scale: 1.02 }}
             >
-              <p className="text-[10px] font-semibold text-expense">Expense</p>
+              <p className="text-[10px] font-semibold text-expense">{t("expenses")}</p>
               <p className="mt-1 text-lg font-extrabold text-expense dark:text-white tabular-money">
-                ₹{totalExpenses >= 100000 ? `${(totalExpenses / 100000).toFixed(1)}L` : totalExpenses.toLocaleString("en-IN")}
+                {symbol}{totalExpenses >= 100000 && symbol === "₹" ? `${(totalExpenses / 100000).toFixed(1)}L` : formatRaw(totalExpenses)}
               </p>
               <p className="text-[10px] font-medium text-expense/70">
                 {filteredTransactions.filter((t) => t.type === "expense").length} txns
@@ -209,7 +212,7 @@ export function AnalyticsScreen({ onNavigate, transactions, monthlyBudget = 1600
             >
               <p className="text-[10px] font-semibold text-savings">Savings</p>
               <p className="mt-1 text-lg font-extrabold text-savings dark:text-white tabular-money">
-                ₹{totalIncome - totalExpenses >= 100000 ? `${((totalIncome - totalExpenses) / 100000).toFixed(1)}L` : (totalIncome - totalExpenses).toLocaleString("en-IN")}
+                {symbol}{totalIncome - totalExpenses >= 100000 && symbol === "₹" ? `${((totalIncome - totalExpenses) / 100000).toFixed(1)}L` : formatRaw(totalIncome - totalExpenses)}
               </p>
               <p className="text-[10px] font-medium text-savings/70">
                 {savingsRate}% rate
@@ -246,7 +249,7 @@ export function AnalyticsScreen({ onNavigate, transactions, monthlyBudget = 1600
                         <div
                           className="h-28 w-28"
                           role="img"
-                          aria-label={`Pie chart: top category is ${categoryData[0]?.name} at ₹${categoryData[0]?.value?.toLocaleString("en-IN")}`}
+                          aria-label={`Pie chart: top category is ${categoryData[0]?.name} at ${symbol}${formatRaw(categoryData[0]?.value || 0)}`}
                         >
                           <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
@@ -264,7 +267,7 @@ export function AnalyticsScreen({ onNavigate, transactions, monthlyBudget = 1600
                                 ))}
                               </Pie>
                               <Tooltip
-                                formatter={(value: number) => [`₹${value.toLocaleString("en-IN")}`, "Amount"]}
+                                formatter={(value: number) => [`${symbol}${formatRaw(value)}`, "Amount"]}
                                 contentStyle={{ fontSize: 11, borderRadius: 8, border: "1px solid rgba(0,0,0,0.1)" }}
                               />
                             </PieChart>
@@ -278,7 +281,7 @@ export function AnalyticsScreen({ onNavigate, transactions, monthlyBudget = 1600
                                 <span className="text-xs font-semibold dark:text-white/80">{item.name}</span>
                               </div>
                               <span className="text-xs font-extrabold text-primary">
-                                ₹{item.value.toLocaleString("en-IN")}
+                                {symbol}{formatRaw(item.value)}
                               </span>
                             </div>
                           ))}
@@ -310,7 +313,7 @@ export function AnalyticsScreen({ onNavigate, transactions, monthlyBudget = 1600
                               tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v}
                             />
                             <Tooltip
-                              formatter={(value: number) => `₹${value.toLocaleString("en-IN")}`}
+                              formatter={(value: number) => `${symbol}${formatRaw(value)}`}
                               contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid rgba(0,0,0,0.1)" }}
                             />
                             <Legend
@@ -335,7 +338,7 @@ export function AnalyticsScreen({ onNavigate, transactions, monthlyBudget = 1600
                       <div>
                         <p className="text-xs font-extrabold text-muted-foreground dark:text-white/60">Total Spent</p>
                         <h3 className="mt-1 text-2xl font-extrabold dark:text-white tabular-money">
-                          ₹{totalExpenses.toLocaleString("en-IN")}
+                          {symbol}{formatRaw(totalExpenses)}
                         </h3>
                       </div>
                       <div className="text-right">
@@ -345,7 +348,7 @@ export function AnalyticsScreen({ onNavigate, transactions, monthlyBudget = 1600
                           {budgetUsed.toFixed(0)}%
                         </span>
                         <p className="mt-1 text-[10px] font-semibold text-muted-foreground dark:text-white/50">
-                          of ₹{monthlyBudget.toLocaleString("en-IN")} budget
+                          of {symbol}{formatRaw(monthlyBudget)} budget
                         </p>
                       </div>
                     </div>
@@ -358,14 +361,14 @@ export function AnalyticsScreen({ onNavigate, transactions, monthlyBudget = 1600
                 <Card className="bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 card-hover">
                   <CardContent className="p-3">
                     <p className="text-[10px] font-semibold text-muted-foreground uppercase">Avg Daily</p>
-                    <p className="text-lg font-extrabold dark:text-white">₹{avgDailySpend.toLocaleString("en-IN")}</p>
+                    <p className="text-lg font-extrabold dark:text-white">{symbol}{formatRaw(avgDailySpend)}</p>
                   </CardContent>
                 </Card>
                 <Card className="bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 card-hover">
                   <CardContent className="p-3">
                     <p className="text-[10px] font-semibold text-muted-foreground uppercase">Top Expense</p>
                     <p className="text-lg font-extrabold dark:text-white">
-                      {topExpense ? `₹${topExpense.amount.toLocaleString("en-IN")}` : "₹0"}
+                      {topExpense ? `${symbol}${formatRaw(topExpense.amount)}` : `${symbol}0`}
                     </p>
                   </CardContent>
                 </Card>
@@ -394,7 +397,7 @@ export function AnalyticsScreen({ onNavigate, transactions, monthlyBudget = 1600
                               <div className="flex items-center justify-between">
                                 <span className="text-xs font-bold dark:text-white">{cat.name}</span>
                                 <span className="text-xs font-extrabold text-muted-foreground dark:text-white/70">
-                                  ₹{spent.toLocaleString("en-IN")}{budget > 0 ? ` / ₹${budget.toLocaleString("en-IN")}` : ""}
+                                  {symbol}{formatRaw(spent)}{budget > 0 ? ` / ${symbol}${formatRaw(budget)}` : ""}
                                 </span>
                               </div>
                               {budget > 0 ? (
@@ -415,7 +418,7 @@ export function AnalyticsScreen({ onNavigate, transactions, monthlyBudget = 1600
                                       {pct > 100 ? `${(pct - 100).toFixed(0)}% over limit!` : `${pct.toFixed(0)}% used`}
                                     </span>
                                     <span className="text-[9px] text-muted-foreground/50">
-                                      Limit: ₹{budget.toLocaleString("en-IN")}
+                                      Limit: {symbol}{formatRaw(budget)}
                                     </span>
                                   </div>
                                 </div>

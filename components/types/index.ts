@@ -44,6 +44,8 @@ export type User = {
   avatar?: string;
   role: "user" | "admin";
   createdAt: string;
+  phone?: string;
+  dob?: string;
 };
 
 export type Screen =
@@ -61,7 +63,8 @@ export type Screen =
   | "recurring"
   | "reports"
   | "categories"
-  | "ask-ai";
+  | "ask-ai"
+  | "reset-password";
 
 export type FilterType = "all" | "expense" | "income";
 
@@ -79,6 +82,8 @@ export type ModalType =
   | "terms"
   | "privacy"
   | "delete"
+  | "savedCards"
+  | "upiDetails"
   | null;
 
 export type CategoryInfo = {

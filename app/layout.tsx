@@ -9,6 +9,10 @@ export const metadata: Metadata = {
   keywords: ["expense tracker", "budget", "finance", "spending", "savings", "income tracker", "money management"],
   authors: [{ name: "SpendsTracks" }],
   manifest: "/manifest.json",
+  icons: {
+    icon: "/favicon.svg",
+    shortcut: "/favicon.svg",
+  },
   openGraph: {
     title: "SpendsTracks — Smart Expense & Budget Tracker",
     description: "Track your income, expenses, and savings goals in one place.",

@@ -25,7 +25,7 @@ export function PhoneFrame({
     >
       <div
         className={cn(
-          "relative flex min-h-screen flex-col overflow-hidden bg-background p-4 dark:bg-background pb-32",
+          "relative flex min-h-screen flex-col bg-background p-4 dark:bg-background pb-32",
           "lg:min-h-0 lg:rounded-none lg:bg-transparent lg:dark:bg-transparent lg:p-0 lg:pb-0",
           className
         )}

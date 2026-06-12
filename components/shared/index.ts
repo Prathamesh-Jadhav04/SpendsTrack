@@ -10,3 +10,4 @@ export { TransactionRow } from "./transaction-row";
 export { ProgressBar } from "./progress-bar";
 export { SettingRow } from "./setting-row";
 export { ModalOverlay, ModalContent } from "./modal";
+export { CustomCursor } from "./custom-cursor";

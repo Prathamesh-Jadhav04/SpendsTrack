@@ -5,15 +5,57 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export const formatAmount = (amount: number, type: "expense" | "income"): string => {
-  const prefix = type === "expense" ? "-" : "+";
-  return `${prefix}₹${amount.toLocaleString("en-IN")}`;
+export const getCurrencySettings = () => {
+  if (typeof window !== "undefined") {
+    const saved = localStorage.getItem("spendstracks_settings");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.currency) {
+          const map: Record<string, { symbol: string; locale: string; code: string }> = {
+            INR: { symbol: "₹", locale: "en-IN", code: "INR" },
+            USD: { symbol: "$", locale: "en-US", code: "USD" },
+            EUR: { symbol: "€", locale: "de-DE", code: "EUR" },
+            GBP: { symbol: "£", locale: "en-GB", code: "GBP" },
+          };
+          return map[parsed.currency] || { symbol: "₹", locale: "en-IN", code: "INR" };
+        }
+      } catch (e) {
+        console.error("Failed to parse settings:", e);
+      }
+    }
+  }
+  return { symbol: "₹", locale: "en-IN", code: "INR" };
 };
 
-export const parseAmount = (value: string): number => {
-  const cleaned = value.replace(/[^0-9.]/g, "");
+export const formatAmountVal = (amount: number, code: string, locale: string): string => {
+  if (code === "INR") {
+    const hasFraction = amount % 1 !== 0;
+    return amount.toLocaleString(locale, {
+      minimumFractionDigits: hasFraction ? 2 : 0,
+      maximumFractionDigits: 2,
+    });
+  } else {
+    return amount.toLocaleString(locale, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
+};
+
+export const formatAmount = (amount: number, type: "expense" | "income"): string => {
+  const prefix = type === "expense" ? "-" : "+";
+  const { symbol, locale, code } = getCurrencySettings();
+  return `${prefix}${symbol}${formatAmountVal(amount, code, locale)}`;
+};
+
+export const parseAmount = (value: string | number): number => {
+  if (value === null || value === undefined) return 0;
+  const strVal = String(value);
+  const cleaned = strVal.replace(/[\s$₹€£]/g, "").replace(/,/g, "");
   const parsed = parseFloat(cleaned);
-  return isNaN(parsed) ? 0 : Math.round(parsed);
+  if (isNaN(parsed)) return 0;
+  return Math.round(parsed * 100) / 100;
 };
 
 export const sanitizeInput = (input: string): string => {

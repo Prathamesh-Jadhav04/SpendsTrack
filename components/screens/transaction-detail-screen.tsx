@@ -9,25 +9,28 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { expenseCategories, incomeCategories } from "@/components/constants";
-import { cn } from "@/lib/utils";
+import { cn, parseAmount } from "@/lib/utils";
 import type { Transaction, Screen } from "@/components/types";
+import { useCurrency } from "@/components/hooks";
 
 interface TransactionDetailScreenProps {
   transaction: Transaction;
   onNavigate: (screen: Screen) => void;
   onDelete: (id: string) => void;
   onEdit: (id: string, updates: Partial<Transaction>) => void;
+  onBack?: () => void;
 }
 
-export function TransactionDetailScreen({ transaction, onNavigate, onDelete, onEdit }: TransactionDetailScreenProps) {
+export function TransactionDetailScreen({ transaction, onNavigate, onDelete, onEdit, onBack }: TransactionDetailScreenProps) {
+  const { symbol, formatRaw } = useCurrency();
   const [isEditing, setIsEditing] = useState(false);
   const [editedAmount, setEditedAmount] = useState(transaction.amount.toString());
   const [editedTitle, setEditedTitle] = useState(transaction.title);
   const [editedNotes, setEditedNotes] = useState(transaction.detail);
 
   const handleSave = () => {
-    const numericAmount = Math.round(parseFloat(editedAmount));
-    if (isNaN(numericAmount) || numericAmount <= 0) return;
+    const numericAmount = parseAmount(editedAmount);
+    if (numericAmount <= 0) return;
     onEdit(transaction.id, {
       amount: numericAmount,
       title: editedTitle,
@@ -43,7 +46,7 @@ export function TransactionDetailScreen({ transaction, onNavigate, onDelete, onE
       <ScreenHeader
         eyebrow="Transaction"
         title="Details"
-        action={<Button size="sm" variant="outline" onClick={() => onNavigate("transactions")}>Back</Button>}
+        action={<Button size="sm" variant="outline" onClick={onBack || (() => onNavigate("transactions"))}>Back</Button>}
       />
 
       <Card className="bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
@@ -84,7 +87,7 @@ export function TransactionDetailScreen({ transaction, onNavigate, onDelete, onE
                 <Input value={editedAmount} onChange={(e) => setEditedAmount(e.target.value)} className="w-32 text-right font-extrabold" />
               ) : (
                 <span className={cn("font-extrabold text-xl tabular-money", transaction.type === "income" ? "text-income" : "text-expense")}>
-                  {transaction.type === "income" ? "+" : "-"}₹{transaction.amount.toLocaleString("en-IN")}
+                  {transaction.type === "income" ? "+" : "-"}{symbol}{formatRaw(transaction.amount)}
                 </span>
               )}
             </div>

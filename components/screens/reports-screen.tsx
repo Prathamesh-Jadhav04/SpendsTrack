@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { expenseCategories } from "@/components/constants";
 import type { Transaction, Screen } from "@/components/types";
+import { useCurrency, useTranslation } from "@/components/hooks";
 import { cn } from "@/lib/utils";
 
 interface ReportsScreenProps {
@@ -26,6 +27,8 @@ interface ReportsScreenProps {
 type PeriodType = "week" | "month" | "quarter" | "year" | "all";
 
 export function ReportsScreen({ onNavigate, transactions }: ReportsScreenProps) {
+  const { symbol, formatRaw } = useCurrency();
+  const { t } = useTranslation();
   const [period, setPeriod] = useState<PeriodType>("month");
   const [selectedMonth, setSelectedMonth] = useState<string>(new Date().toISOString().slice(0, 7));
 
@@ -175,9 +178,9 @@ export function ReportsScreen({ onNavigate, transactions }: ReportsScreenProps) 
                   <TrendingUp className="size-5" />
                 </div>
               </div>
-              <p className="mt-3 text-xs font-semibold text-income/70">Income</p>
+              <p className="mt-3 text-xs font-semibold text-income/70">{t("income")}</p>
               <p className="text-lg font-extrabold text-income dark:text-white">
-                ₹{totalIncome.toLocaleString("en-IN")}
+                {symbol}{formatRaw(totalIncome)}
               </p>
             </motion.div>
             <motion.div
@@ -189,9 +192,9 @@ export function ReportsScreen({ onNavigate, transactions }: ReportsScreenProps) 
                   <TrendingDown className="size-5" />
                 </div>
               </div>
-              <p className="mt-3 text-xs font-semibold text-expense/70">Expense</p>
+              <p className="mt-3 text-xs font-semibold text-expense/70">{t("expenses")}</p>
               <p className="text-lg font-extrabold text-expense dark:text-white">
-                ₹{totalExpense.toLocaleString("en-IN")}
+                {symbol}{formatRaw(totalExpense)}
               </p>
             </motion.div>
           </div>
@@ -209,7 +212,7 @@ export function ReportsScreen({ onNavigate, transactions }: ReportsScreenProps) 
               <div>
                 <p className={cn("text-xs font-semibold", netSavings >= 0 ? "text-savings" : "text-expense")}>Net Savings</p>
                 <p className={cn("text-2xl font-extrabold", netSavings >= 0 ? "text-savings dark:text-white" : "text-expense dark:text-white")}>
-                  ₹{netSavings.toLocaleString("en-IN")}
+                  {symbol}{formatRaw(netSavings)}
                 </p>
               </div>
               <div className="text-right">
@@ -252,7 +255,7 @@ export function ReportsScreen({ onNavigate, transactions }: ReportsScreenProps) 
                             <span className="size-2.5 rounded-full" style={{ backgroundColor: cat.color }} />
                             <span className="font-semibold text-sm dark:text-white">{cat.name}</span>
                           </div>
-                          <span className="font-bold text-sm dark:text-white/70">₹{cat.amount.toLocaleString("en-IN")}</span>
+                          <span className="font-bold text-sm dark:text-white/70">{symbol}{formatRaw(cat.amount)}</span>
                         </div>
                         <ProgressBar value={cat.percent} compact />
                       </div>
@@ -268,14 +271,14 @@ export function ReportsScreen({ onNavigate, transactions }: ReportsScreenProps) 
                 <Card className="bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5">
                   <CardContent className="p-4">
                     <p className="text-[10px] font-semibold text-muted-foreground uppercase">Avg Daily Spend</p>
-                    <p className="text-lg font-extrabold dark:text-white">₹{avgDailySpend.toLocaleString("en-IN")}</p>
+                    <p className="text-lg font-extrabold dark:text-white">{symbol}{formatRaw(avgDailySpend)}</p>
                   </CardContent>
                 </Card>
                 <Card className="bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5">
                   <CardContent className="p-4">
                     <p className="text-[10px] font-semibold text-muted-foreground uppercase">Top Expense</p>
                     <p className="text-lg font-extrabold dark:text-white">
-                      {topExpense ? `₹${topExpense.amount.toLocaleString("en-IN")}` : "₹0"}
+                      {topExpense ? `${symbol}${formatRaw(topExpense.amount)}` : `${symbol}0`}
                     </p>
                   </CardContent>
                 </Card>

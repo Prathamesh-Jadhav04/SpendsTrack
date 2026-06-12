@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { PhoneFrame, ScreenHeader, TransactionRow, EmptyState, StatCard } from "@/components/shared";
 import type { Screen, Transaction, FilterType } from "@/components/types";
+import { useCurrency, useTranslation } from "@/components/hooks";
 
 interface TransactionsScreenProps {
   onNavigate: (screen: Screen) => void;
@@ -38,7 +39,10 @@ export function TransactionsScreen({
   onSearchChange,
   onTransactionClick,
 }: TransactionsScreenProps) {
+  const { symbol, formatRaw } = useCurrency();
+  const { t } = useTranslation();
   const [localQuery, setLocalQuery] = useState(searchQuery);
+  const [debouncedQuery, setDebouncedQuery] = useState(searchQuery);
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [dateFilter, setDateFilter] = useState<DateFilter>("all");
   const [showFilters, setShowFilters] = useState(false);
@@ -46,6 +50,7 @@ export function TransactionsScreen({
 
   useEffect(() => {
     const timer = setTimeout(() => {
+      setDebouncedQuery(localQuery);
       onSearchChange(localQuery);
     }, 300);
     return () => clearTimeout(timer);
@@ -91,8 +96,8 @@ export function TransactionsScreen({
       });
     }
 
-    if (localQuery) {
-      const q = localQuery.toLowerCase();
+    if (debouncedQuery) {
+      const q = debouncedQuery.toLowerCase();
       filtered = filtered.filter(
         (t) =>
           t.title.toLowerCase().includes(q) ||
@@ -122,7 +127,7 @@ export function TransactionsScreen({
     }
 
     return filtered;
-  }, [transactions, filter, dateFilter, localQuery, sortBy, getDateRange]);
+  }, [transactions, filter, dateFilter, debouncedQuery, sortBy, getDateRange]);
 
   const totalSpent = useMemo(() =>
     transactions
@@ -308,15 +313,15 @@ export function TransactionsScreen({
         >
           <StatCard
             icon={<TrendingDown className="size-5" />}
-            label="Spent"
-            value={`₹${totalSpent.toLocaleString("en-IN")}`}
+            label={t("expenses")}
+            value={`${symbol}${formatRaw(totalSpent)}`}
             tone="expense"
             className="tabular-money"
           />
           <StatCard
             icon={<TrendingUp className="size-5" />}
-            label="Earned"
-            value={`₹${totalEarned.toLocaleString("en-IN")}`}
+            label={t("income")}
+            value={`${symbol}${formatRaw(totalEarned)}`}
             tone="income"
             className="tabular-money"
           />

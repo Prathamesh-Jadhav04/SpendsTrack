@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import type { Transaction } from "@/components/types";
+import { useCurrency } from "@/components/hooks";
 
 export function TransactionRow({
   transaction,
@@ -12,6 +13,7 @@ export function TransactionRow({
   onClick?: () => void;
 }) {
   const isIncome = transaction.type === "income";
+  const { format } = useCurrency();
 
   return (
     <motion.div
@@ -49,7 +51,7 @@ export function TransactionRow({
           isIncome ? "text-income" : "text-expense"
         )}
       >
-        {isIncome ? "+" : "-"}₹{transaction.amount.toLocaleString("en-IN")}
+        {isIncome ? "+" : "-"}{format(transaction.amount)}
       </p>
     </motion.div>
   );

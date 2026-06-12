@@ -36,6 +36,8 @@ export function useAuth({
             email: sbUser.email || "",
             role: (profile?.role as "user" | "admin") || "user",
             createdAt: sbUser.created_at,
+            phone: profile?.phone || sbUser.user_metadata?.phone || sbUser.phone || "",
+            dob: profile?.dob || sbUser.user_metadata?.dob || "",
           });
           setIsLoggedIn(true);
           setCurrentScreen("dashboard");
@@ -66,6 +68,10 @@ export function useAuth({
 
     // Listen to auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setCurrentScreen("reset-password");
+      }
+
       if (session?.user) {
         const sbUser = session.user;
         const { data: profile } = await supabase
@@ -80,8 +86,14 @@ export function useAuth({
           email: sbUser.email || "",
           role: (profile?.role as "user" | "admin") || "user",
           createdAt: sbUser.created_at,
+          phone: profile?.phone || sbUser.user_metadata?.phone || sbUser.phone || "",
+          dob: profile?.dob || sbUser.user_metadata?.dob || "",
         });
         setIsLoggedIn(true);
+        if (event !== "PASSWORD_RECOVERY") {
+          // Only redirect if not recovering password
+          setCurrentScreen("dashboard");
+        }
       } else {
         // Only clear if not guest
         setUser(prev => {
@@ -207,21 +219,62 @@ export function useAuth({
   }, [setCurrentScreen, showToast]);
 
   const handleUpdateProfile = useCallback(
-    async (data: { name: string }) => {
+    async (data: { name: string; phone?: string; dob?: string }) => {
       if (isLoggedIn && user && user.email !== "guest@spendstracks.com" && user.id !== "admin-id") {
-        const { error } = await supabase
+        // 1. Update Auth user metadata
+        const { error: authError } = await supabase.auth.updateUser({
+          data: { name: data.name, phone: data.phone, dob: data.dob }
+        });
+        if (authError) {
+          showToast("Failed to update auth metadata: " + authError.message, 3000, "error");
+          return;
+        }
+
+        // 2. Try updating name, phone, and dob in profiles table
+        const { error: profileError } = await supabase
           .from("profiles")
-          .update({ name: data.name })
+          .update({ name: data.name, phone: data.phone, dob: data.dob })
           .eq("id", user.id);
 
-        if (error) {
-          showToast("Failed to update profile: " + error.message, 3000, "error");
-          return;
+        if (profileError) {
+          console.error("Failed to update profiles with all fields, trying name only:", profileError);
+          // Fallback: Try updating just the name
+          const { error: fallbackError } = await supabase
+            .from("profiles")
+            .update({ name: data.name })
+            .eq("id", user.id);
+
+          if (fallbackError) {
+            showToast("Failed to update profile database: " + fallbackError.message, 3000, "error");
+            return;
+          }
         }
       }
 
-      setUser((prev) => (prev ? { ...prev, name: data.name } : null));
-      showToast("Profile name updated successfully!");
+      // 3. Guest profile updates in local storage
+      if (user && user.email === "guest@spendstracks.com") {
+        const saved = localStorage.getItem("spendstracks_data");
+        let parsedData: any = {};
+        if (saved) {
+          try {
+            parsedData = JSON.parse(saved);
+          } catch (e) {
+            console.error(e);
+          }
+        }
+        const updatedUser = {
+          ...user,
+          name: data.name,
+          phone: data.phone,
+          dob: data.dob,
+        };
+        parsedData.user = updatedUser;
+        localStorage.setItem("spendstracks_data", JSON.stringify(parsedData));
+      }
+
+      // 4. Update local user state
+      setUser((prev) => (prev ? { ...prev, name: data.name, phone: data.phone, dob: data.dob } : null));
+      showToast("Profile updated successfully!");
     },
     [isLoggedIn, user, showToast]
   );

@@ -15,7 +15,7 @@ import {
   seedGoals,
   seedRecurring,
 } from "@/components/constants";
-import { generateId, formatAmount, sanitizeInput, csvEscape } from "@/lib/utils";
+import { generateId, formatAmount, sanitizeInput, csvEscape, getCurrencySettings, parseAmount } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 
 const STORAGE_KEY = "spendstracks_data";
@@ -49,6 +49,14 @@ export function useAppData({ isLoggedIn, user, showToast }: UseAppDataProps) {
 
   const transactionsRef = useRef(transactions);
   transactionsRef.current = transactions;
+  const transactionHistoryRef = useRef(transactionHistory);
+  transactionHistoryRef.current = transactionHistory;
+  const goalsRef = useRef(goals);
+  goalsRef.current = goals;
+  const recurringRef = useRef(recurring);
+  recurringRef.current = recurring;
+  const categoryBudgetsRef = useRef(categoryBudgets);
+  categoryBudgetsRef.current = categoryBudgets;
   const monthlyBudgetRef = useRef(monthlyBudget);
   monthlyBudgetRef.current = monthlyBudget;
 
@@ -215,6 +223,130 @@ export function useAppData({ isLoggedIn, user, showToast }: UseAppDataProps) {
     loadSupabaseData();
   }, [user, isLoggedIn, showToast]);
 
+  const currentCurrencyRef = useRef<string>("");
+
+  useEffect(() => {
+    const settings = getCurrencySettings();
+    currentCurrencyRef.current = settings.code;
+  }, []);
+
+  useEffect(() => {
+    const handleSettingsChange = async () => {
+      const newSettings = getCurrencySettings();
+      const newCurrency = newSettings.code;
+      const oldCurrency = currentCurrencyRef.current;
+
+      if (oldCurrency && oldCurrency !== newCurrency) {
+        const rates: Record<string, number> = {
+          INR: 1.0,
+          USD: 83.0,
+          EUR: 90.0,
+          GBP: 105.0,
+        };
+
+        const oldRate = rates[oldCurrency] || 1.0;
+        const newRate = rates[newCurrency] || 1.0;
+        const factor = oldRate / newRate;
+
+        const convertAmount = (amount: number) => {
+          return Math.round(amount * factor * 100) / 100;
+        };
+
+        // 1. Update local states
+        setTransactions((prev) => prev.map((t) => ({ ...t, amount: convertAmount(t.amount) })));
+        setTransactionHistory((prev) => prev.map((t) => ({ ...t, amount: convertAmount(t.amount) })));
+        setGoals((prev) =>
+          prev.map((g) => ({
+            ...g,
+            target: convertAmount(g.target),
+            current: convertAmount(g.current),
+          }))
+        );
+        setRecurring((prev) => prev.map((r) => ({ ...r, amount: convertAmount(r.amount) })));
+        setMonthlyBudget((prev) => convertAmount(prev));
+        setCategoryBudgets((prev) => {
+          const updated: Record<string, number> = {};
+          for (const [cat, val] of Object.entries(prev)) {
+            updated[cat] = convertAmount(val);
+          }
+          return updated;
+        });
+
+        // 2. Update Supabase if user is logged in and not guest or admin-id
+        if (isLoggedIn && user && user.email !== "guest@spendstracks.com" && user.id !== "admin-id") {
+          try {
+            showToast(`Converting data from ${oldCurrency} to ${newCurrency}...`, 3000, "info");
+
+            // Convert and update transactions in Supabase
+            const txPromises = transactionsRef.current.map((t) => {
+              const newAmt = convertAmount(t.amount);
+              return supabase
+                .from("transactions")
+                .update({ amount: newAmt })
+                .eq("id", t.id);
+            });
+
+            // Convert and update goals in Supabase
+            const goalPromises = goalsRef.current.map((g) => {
+              const newTarget = convertAmount(g.target);
+              const newCurrent = convertAmount(g.current);
+              return supabase
+                .from("goals")
+                .update({ target: newTarget, current: newCurrent })
+                .eq("id", g.id);
+            });
+
+            // Convert and update recurring in Supabase
+            const recPromises = recurringRef.current.map((r) => {
+              const newAmt = convertAmount(r.amount);
+              return supabase
+                .from("recurring_payments")
+                .update({ amount: newAmt })
+                .eq("id", r.id);
+            });
+
+            // Convert and update profile in Supabase
+            const newMonthlyBudget = convertAmount(monthlyBudgetRef.current);
+            const newCategoryBudgets: Record<string, number> = {};
+            for (const [cat, val] of Object.entries(categoryBudgetsRef.current)) {
+              newCategoryBudgets[cat] = convertAmount(val);
+            }
+            const profilePromise = supabase
+              .from("profiles")
+              .update({
+                monthly_budget: newMonthlyBudget,
+                category_budgets: newCategoryBudgets,
+              })
+              .eq("id", user.id);
+
+            const results = await Promise.all([
+              ...txPromises,
+              ...goalPromises,
+              ...recPromises,
+              profilePromise
+            ]);
+
+            const firstError = results.find(r => r.error)?.error;
+            if (firstError) {
+              throw firstError;
+            } else {
+              showToast(`Cloud sync complete! Converted all amounts to ${newCurrency}`, 3000, "success");
+            }
+          } catch (e: any) {
+            console.error("Failed to sync converted amounts to Supabase:", e);
+            showToast("Failed to sync currency conversion to cloud: " + e.message, 4000, "error");
+          }
+        }
+      }
+      currentCurrencyRef.current = newCurrency;
+    };
+
+    window.addEventListener("spendstracks_settings_changed", handleSettingsChange);
+    return () => {
+      window.removeEventListener("spendstracks_settings_changed", handleSettingsChange);
+    };
+  }, [isLoggedIn, user, showToast]);
+
   // Local storage auto-save for Guest only
   useEffect(() => {
     if (isLoggedIn && user?.email === "guest@spendstracks.com") {
@@ -236,7 +368,7 @@ export function useAppData({ isLoggedIn, user, showToast }: UseAppDataProps) {
 
   const handleAddTransaction = useCallback(
     async (data: { amount: string; category: string; date: string; notes: string; type: "expense" | "income" }) => {
-      const numericAmount = Math.round(parseFloat(data.amount));
+      const numericAmount = parseAmount(data.amount);
       if (isNaN(numericAmount) || numericAmount <= 0) {
         showToast("Please enter a valid amount", 3000, "error");
         return;
@@ -556,7 +688,8 @@ export function useAppData({ isLoggedIn, user, showToast }: UseAppDataProps) {
       }
 
       setCategoryBudgets(updatedCategoryBudgets);
-      showToast(`Budget for ${categoryTitles[category] || category} updated to ₹${amount.toLocaleString("en-IN")}`);
+      const settings = getCurrencySettings();
+      showToast(`Budget for ${categoryTitles[category] || category} updated to ${settings.symbol}${amount.toLocaleString(settings.locale)}`);
     },
     [showToast, categoryBudgets, isLoggedIn, user]
   );
