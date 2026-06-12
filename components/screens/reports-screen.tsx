@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, Calendar, TrendingUp, TrendingDown, Wallet, FileText } from "lucide-react";
 
-import { PhoneFrame, ScreenHeader, BottomNav, ProgressBar, EmptyState } from "@/components/shared";
+import { PhoneFrame, ScreenHeader, ProgressBar, EmptyState } from "@/components/shared";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { expenseCategories } from "@/components/constants";
 import type { Transaction, Screen } from "@/components/types";
+import { cn } from "@/lib/utils";
 
 interface ReportsScreenProps {
   onNavigate: (screen: Screen) => void;
@@ -65,14 +66,14 @@ export function ReportsScreen({ onNavigate, transactions }: ReportsScreenProps) 
   const totalIncome = useMemo(() => 
     filteredTransactions
       .filter(t => t.type === "income")
-      .reduce((sum, t) => sum + parseInt(t.amount.replace(/[^0-9]/g, "")), 0),
+      .reduce((sum, t) => sum + t.amount, 0),
     [filteredTransactions]
   );
 
   const totalExpense = useMemo(() => 
     filteredTransactions
       .filter(t => t.type === "expense")
-      .reduce((sum, t) => sum + parseInt(t.amount.replace(/[^0-9]/g, "")), 0),
+      .reduce((sum, t) => sum + t.amount, 0),
     [filteredTransactions]
   );
 
@@ -83,7 +84,7 @@ export function ReportsScreen({ onNavigate, transactions }: ReportsScreenProps) 
     const breakdown = filteredTransactions
       .filter(t => t.type === "expense")
       .reduce((acc, t) => {
-        acc[t.category] = (acc[t.category] || 0) + parseInt(t.amount.replace(/[^0-9]/g, ""));
+        acc[t.category] = (acc[t.category] || 0) + t.amount;
         return acc;
       }, {} as Record<string, number>);
 
@@ -103,7 +104,7 @@ export function ReportsScreen({ onNavigate, transactions }: ReportsScreenProps) 
   const topExpense = useMemo(() => 
     filteredTransactions
       .filter(t => t.type === "expense")
-      .sort((a, b) => parseInt(b.amount.replace(/[^0-9]/g, "")) - parseInt(a.amount.replace(/[^0-9]/g, "")))[0],
+      .sort((a, b) => b.amount - a.amount)[0],
     [filteredTransactions]
   );
 
@@ -119,8 +120,8 @@ export function ReportsScreen({ onNavigate, transactions }: ReportsScreenProps) 
                       period === "year" ? "This Year" : "All Time";
 
   return (
-    <PhoneFrame label="Reports screen" className="pb-28">
-      <div className="h-full flex flex-col overflow-y-auto no-scrollbar smooth-scroll momentum-scroll">
+    <PhoneFrame label="Reports screen" className="pb-28 lg:pb-0">
+      <div className="flex flex-col overflow-y-auto no-scrollbar smooth-scroll momentum-scroll lg:h-auto lg:overflow-visible">
         <ScreenHeader
           eyebrow="Analytics"
           title="Reports"
@@ -132,7 +133,7 @@ export function ReportsScreen({ onNavigate, transactions }: ReportsScreenProps) 
           }
         />
 
-        <div className="pb-4 space-y-3">
+        <div className="pb-4 space-y-4">
           <div className="flex gap-2">
             <Select value={period} onValueChange={(v: PeriodType) => setPeriod(v)}>
               <SelectTrigger className="flex-1 h-9 text-xs">
@@ -164,53 +165,58 @@ export function ReportsScreen({ onNavigate, transactions }: ReportsScreenProps) 
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 lg:gap-4">
             <motion.div
-              className="rounded-2xl bg-gradient-to-br from-[#dcfce7] to-[#bbf7d0] p-3 dark:from-[#0f1a15] dark:to-[#0a1210]"
+              className="rounded-2xl bg-gradient-to-br from-ds-canvas to-income-soft/10 p-4 dark:from-ds-canvas-soft-2 dark:to-income-soft/5"
               whileHover={{ scale: 1.02 }}
             >
               <div className="flex items-center gap-2">
-                <div className="grid size-8 place-items-center rounded-xl bg-white/50 dark:bg-white/5">
-                  <TrendingUp className="size-4 text-[#16a34a]" />
+                <div className="grid size-9 place-items-center rounded-xl bg-income-soft text-income">
+                  <TrendingUp className="size-5" />
                 </div>
               </div>
-              <p className="mt-2 text-xs font-semibold text-[#16a34a]/70">Income</p>
-              <p className="text-lg font-extrabold text-[#16a34a] dark:text-white">
+              <p className="mt-3 text-xs font-semibold text-income/70">Income</p>
+              <p className="text-lg font-extrabold text-income dark:text-white">
                 ₹{totalIncome.toLocaleString("en-IN")}
               </p>
             </motion.div>
             <motion.div
-              className="rounded-2xl bg-gradient-to-br from-[#fee2e2] to-[#fecaca] p-3 dark:from-[#1a0f0e] dark:to-[#100a09]"
+              className="rounded-2xl bg-gradient-to-br from-ds-canvas to-expense-soft/10 p-4 dark:from-ds-canvas-soft-2 dark:to-expense-soft/5"
               whileHover={{ scale: 1.02 }}
             >
               <div className="flex items-center gap-2">
-                <div className="grid size-8 place-items-center rounded-xl bg-white/50 dark:bg-white/5">
-                  <TrendingDown className="size-4 text-[#dc2626]" />
+                <div className="grid size-9 place-items-center rounded-xl bg-expense-soft text-expense">
+                  <TrendingDown className="size-5" />
                 </div>
               </div>
-              <p className="mt-2 text-xs font-semibold text-[#dc2626]/70">Expense</p>
-              <p className="text-lg font-extrabold text-[#dc2626] dark:text-white">
+              <p className="mt-3 text-xs font-semibold text-expense/70">Expense</p>
+              <p className="text-lg font-extrabold text-expense dark:text-white">
                 ₹{totalExpense.toLocaleString("en-IN")}
               </p>
             </motion.div>
           </div>
 
           <motion.div
-            className={`rounded-2xl p-4 ${netSavings >= 0 ? "bg-gradient-to-br from-[#e0e7ff] to-[#c7d2fe] dark:from-[#1e1b4b] dark:to-[#0f0a2a]" : "bg-gradient-to-br from-[#fee2e2] to-[#fecaca] dark:from-[#1a0f0e] dark:to-[#100a09]"}`}
+            className={cn(
+              "rounded-2xl p-4 border border-border/50 dark:border-white/5",
+              netSavings >= 0
+                ? "bg-gradient-to-br from-ds-canvas to-savings-soft/10 dark:from-ds-canvas-soft-2 dark:to-savings-soft/5"
+                : "bg-gradient-to-br from-ds-canvas to-expense-soft/10 dark:from-ds-canvas-soft-2 dark:to-expense-soft/5"
+            )}
             whileHover={{ scale: 1.01 }}
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className={`text-xs font-semibold ${netSavings >= 0 ? "text-[#4f46e5]/70 dark:text-[#818cf8]/70" : "text-[#dc2626]/70"}`}>Net Savings</p>
-                <p className={`text-2xl font-extrabold ${netSavings >= 0 ? "text-[#4f46e5] dark:text-white" : "text-[#dc2626] dark:text-white"}`}>
+                <p className={cn("text-xs font-semibold", netSavings >= 0 ? "text-savings" : "text-expense")}>Net Savings</p>
+                <p className={cn("text-2xl font-extrabold", netSavings >= 0 ? "text-savings dark:text-white" : "text-expense dark:text-white")}>
                   ₹{netSavings.toLocaleString("en-IN")}
                 </p>
               </div>
               <div className="text-right">
-                <p className={`text-xs font-medium ${netSavings >= 0 ? "text-[#4f46e5]/70 dark:text-white/50" : "text-[#dc2626]/70"}`}>
+                <p className={cn("text-xs font-medium opacity-70", netSavings >= 0 ? "text-savings" : "text-expense")}>
                   {savingsRate}% savings rate
                 </p>
-                <p className={`text-xs font-medium ${netSavings >= 0 ? "text-[#4f46e5]/70 dark:text-white/50" : "text-[#dc2626]/70"}`}>
+                <p className={cn("text-xs font-medium opacity-70", netSavings >= 0 ? "text-savings" : "text-expense")}>
                   {filteredTransactions.length} transactions
                 </p>
               </div>
@@ -226,7 +232,7 @@ export function ReportsScreen({ onNavigate, transactions }: ReportsScreenProps) 
                 <Button
                   onClick={() => onNavigate("add-expense")}
                   size="sm"
-                  className="rounded-xl bg-gradient-to-r from-[#ff6b5f] to-[#ff995c]"
+                  className="rounded-xl bg-expense hover:bg-expense/90"
                 >
                   <TrendingDown className="mr-1.5 size-3.5" />
                   Add Expense
@@ -236,9 +242,9 @@ export function ReportsScreen({ onNavigate, transactions }: ReportsScreenProps) 
           ) : (
             <>
               <Card className="bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
-                <CardContent className="p-4">
-                  <h4 className="font-extrabold mb-3 dark:text-white">Spending by Category</h4>
-                  <div className="space-y-3">
+                <CardContent className="p-5">
+                  <h4 className="font-extrabold mb-4 dark:text-white">Spending by Category</h4>
+                  <div className="space-y-4">
                     {categoryBreakdown.map((cat) => (
                       <div key={cat.name}>
                         <div className="flex justify-between mb-1">
@@ -258,18 +264,18 @@ export function ReportsScreen({ onNavigate, transactions }: ReportsScreenProps) 
                 </CardContent>
               </Card>
 
-              <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 lg:gap-4 mt-4">
                 <Card className="bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5">
-                  <CardContent className="p-3">
+                  <CardContent className="p-4">
                     <p className="text-[10px] font-semibold text-muted-foreground uppercase">Avg Daily Spend</p>
                     <p className="text-lg font-extrabold dark:text-white">₹{avgDailySpend.toLocaleString("en-IN")}</p>
                   </CardContent>
                 </Card>
                 <Card className="bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5">
-                  <CardContent className="p-3">
+                  <CardContent className="p-4">
                     <p className="text-[10px] font-semibold text-muted-foreground uppercase">Top Expense</p>
                     <p className="text-lg font-extrabold dark:text-white">
-                      {topExpense ? `₹${parseInt(topExpense.amount.replace(/[^0-9]/g, "")).toLocaleString("en-IN")}` : "₹0"}
+                      {topExpense ? `₹${topExpense.amount.toLocaleString("en-IN")}` : "₹0"}
                     </p>
                   </CardContent>
                 </Card>
@@ -278,8 +284,6 @@ export function ReportsScreen({ onNavigate, transactions }: ReportsScreenProps) 
           )}
         </div>
       </div>
-
-      <BottomNav active="Insights" onNavigate={onNavigate} />
     </PhoneFrame>
   );
 }

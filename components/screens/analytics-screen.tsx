@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Cell, Pie, PieChart, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import { Cell, Pie, PieChart, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from "recharts";
 import { BarChart3, Target, RefreshCcw, FileBarChart, Tags, TrendingDown, TrendingUp, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,7 +13,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { motion } from "framer-motion";
-import { PhoneFrame, ScreenHeader, BottomNav, EmptyState, ProgressBar } from "@/components/shared";
+import { cn } from "@/lib/utils";
+import { PhoneFrame, ScreenHeader, EmptyState, ProgressBar } from "@/components/shared";
 import type { Screen, Transaction } from "@/components/types";
 import { expenseCategories } from "@/components/constants";
 
@@ -21,18 +22,19 @@ interface AnalyticsScreenProps {
   onNavigate: (screen: Screen) => void;
   transactions: Transaction[];
   monthlyBudget?: number;
+  categoryBudgets: Record<string, number>;
   onExport?: () => void;
 }
 
 type TimeRange = "week" | "month" | "quarter" | "year" | "all";
 
-export function AnalyticsScreen({ onNavigate, transactions, monthlyBudget = 160000, onExport }: AnalyticsScreenProps) {
+export function AnalyticsScreen({ onNavigate, transactions, monthlyBudget = 160000, categoryBudgets, onExport }: AnalyticsScreenProps) {
   const [timeRange, setTimeRange] = useState<TimeRange>("month");
 
   const getDateRange = useMemo(() => {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
+
     switch (timeRange) {
       case "week": {
         const weekAgo = new Date(today);
@@ -62,17 +64,17 @@ export function AnalyticsScreen({ onNavigate, transactions, monthlyBudget = 1600
     return transactions.filter(t => t.date && new Date(t.date) >= getDateRange);
   }, [transactions, getDateRange]);
 
-  const totalExpenses = useMemo(() => 
+  const totalExpenses = useMemo(() =>
     filteredTransactions
       .filter((t) => t.type === "expense")
-      .reduce((sum, t) => sum + parseInt(t.amount.replace(/[^0-9]/g, "")), 0),
+      .reduce((sum, t) => sum + t.amount, 0),
     [filteredTransactions]
   );
 
-  const totalIncome = useMemo(() => 
+  const totalIncome = useMemo(() =>
     filteredTransactions
       .filter((t) => t.type === "income")
-      .reduce((sum, t) => sum + parseInt(t.amount.replace(/[^0-9]/g, "")), 0),
+      .reduce((sum, t) => sum + t.amount, 0),
     [filteredTransactions]
   );
 
@@ -83,21 +85,21 @@ export function AnalyticsScreen({ onNavigate, transactions, monthlyBudget = 1600
     const data = filteredTransactions
       .filter((t) => t.type === "expense")
       .reduce((acc, t) => {
-        acc[t.category] = (acc[t.category] || 0) + parseInt(t.amount.replace(/[^0-9]/g, ""));
+        acc[t.category] = (acc[t.category] || 0) + t.amount;
         return acc;
       }, {} as Record<string, number>);
 
     return Object.entries(data)
       .map(([name, value]) => {
         const cat = expenseCategories.find((c) => c.value === name);
-        return { name: cat?.label || name, value, color: cat?.color || "#7766e8" };
+        return { key: name, name: cat?.label || name, value, color: cat?.color || "#7766e8" };
       })
       .sort((a, b) => b.value - a.value);
   }, [filteredTransactions]);
 
   const monthlyTrend = useMemo(() => {
     const months: Record<string, { income: number; expense: number; label: string }> = {};
-    
+
     filteredTransactions.forEach(t => {
       if (!t.date) return;
       const d = new Date(t.date);
@@ -105,9 +107,8 @@ export function AnalyticsScreen({ onNavigate, transactions, monthlyBudget = 1600
       if (!months[key]) {
         months[key] = { income: 0, expense: 0, label: d.toLocaleString("en-IN", { month: "short" }) };
       }
-      const amount = parseInt(t.amount.replace(/[^0-9]/g, ""));
-      if (t.type === "income") months[key].income += amount;
-      else months[key].expense += amount;
+      if (t.type === "income") months[key].income += t.amount;
+      else months[key].expense += t.amount;
     });
 
     return Object.entries(months)
@@ -116,9 +117,11 @@ export function AnalyticsScreen({ onNavigate, transactions, monthlyBudget = 1600
       .map(([key, data]) => ({ ...data, month: data.label }));
   }, [filteredTransactions]);
 
-  const topExpense = filteredTransactions
-    .filter(t => t.type === "expense")
-    .sort((a, b) => parseInt(b.amount.replace(/[^0-9]/g, "")) - parseInt(a.amount.replace(/[^0-9]/g, "")))[0];
+  const topExpense = useMemo(() => {
+    const expenses = filteredTransactions.filter(t => t.type === "expense");
+    if (expenses.length === 0) return null;
+    return expenses.reduce((max, t) => t.amount > max.amount ? t : max);
+  }, [filteredTransactions]);
 
   const avgDailySpend = useMemo(() => {
     if (!getDateRange || filteredTransactions.length === 0) return 0;
@@ -140,8 +143,8 @@ export function AnalyticsScreen({ onNavigate, transactions, monthlyBudget = 1600
   };
 
   return (
-    <PhoneFrame label="Analytics screen" className="pb-28">
-      <div className="h-full flex flex-col overflow-y-auto no-scrollbar smooth-scroll momentum-scroll px-1">
+    <PhoneFrame label="Analytics screen" className="pb-28 lg:pb-0">
+      <div className="flex flex-col overflow-y-auto no-scrollbar smooth-scroll momentum-scroll lg:h-auto lg:overflow-visible">
         <ScreenHeader
           eyebrow="Insights"
           title="Analytics"
@@ -175,40 +178,40 @@ export function AnalyticsScreen({ onNavigate, transactions, monthlyBudget = 1600
           animate="visible"
           className="space-y-3 pb-4"
         >
-          <motion.div variants={itemVariants} className="grid grid-cols-3 gap-2">
+          <motion.div variants={itemVariants} className="grid grid-cols-3 gap-2 lg:gap-4">
             <motion.div
-              className="rounded-2xl bg-gradient-to-br from-[#dcfce7] to-[#bbf7d0] p-3 dark:from-[#0f1a15] dark:to-[#0a1210] card-hover"
+              className="rounded-2xl bg-gradient-to-br from-ds-canvas to-income-soft/10 p-3 dark:from-ds-canvas-soft-2 dark:to-income-soft/5 card-hover"
               whileHover={{ scale: 1.02 }}
             >
-              <p className="text-[10px] font-semibold text-[#16a34a] dark:text-[#16a34a]">Income</p>
-              <p className="mt-1 text-lg font-extrabold text-[#16a34a] dark:text-white">
+              <p className="text-[10px] font-semibold text-income">Income</p>
+              <p className="mt-1 text-lg font-extrabold text-income dark:text-white tabular-money">
                 ₹{totalIncome >= 100000 ? `${(totalIncome / 100000).toFixed(1)}L` : totalIncome.toLocaleString("en-IN")}
               </p>
-              <p className="text-[10px] font-medium text-[#16a34a]/70">
+              <p className="text-[10px] font-medium text-income/70">
                 {filteredTransactions.filter((t) => t.type === "income").length} txns
               </p>
             </motion.div>
             <motion.div
-              className="rounded-2xl bg-gradient-to-br from-[#fee2e2] to-[#fecaca] p-3 dark:from-[#1a0f0e] dark:to-[#100a09] card-hover"
+              className="rounded-2xl bg-gradient-to-br from-ds-canvas to-expense-soft/10 p-3 dark:from-ds-canvas-soft-2 dark:to-expense-soft/5 card-hover"
               whileHover={{ scale: 1.02 }}
             >
-              <p className="text-[10px] font-semibold text-[#dc2626] dark:text-[#ff6b5f]">Expense</p>
-              <p className="mt-1 text-lg font-extrabold text-[#dc2626] dark:text-white">
+              <p className="text-[10px] font-semibold text-expense">Expense</p>
+              <p className="mt-1 text-lg font-extrabold text-expense dark:text-white tabular-money">
                 ₹{totalExpenses >= 100000 ? `${(totalExpenses / 100000).toFixed(1)}L` : totalExpenses.toLocaleString("en-IN")}
               </p>
-              <p className="text-[10px] font-medium text-[#dc2626]/70">
+              <p className="text-[10px] font-medium text-expense/70">
                 {filteredTransactions.filter((t) => t.type === "expense").length} txns
               </p>
             </motion.div>
             <motion.div
-              className="rounded-2xl bg-gradient-to-br from-[#e0e7ff] to-[#c7d2fe] p-3 dark:from-[#1e1b4b] dark:to-[#0f0a2a] card-hover"
+              className="rounded-2xl bg-gradient-to-br from-ds-canvas to-savings-soft/10 p-3 dark:from-ds-canvas-soft-2 dark:to-savings-soft/5 card-hover"
               whileHover={{ scale: 1.02 }}
             >
-              <p className="text-[10px] font-semibold text-[#4f46e5] dark:text-[#818cf8]">Savings</p>
-              <p className="mt-1 text-lg font-extrabold text-[#4f46e5] dark:text-white">
-                ₹{(totalIncome - totalExpenses) >= 1000 ? `${((totalIncome - totalExpenses) / 1000).toFixed(1)}K` : (totalIncome - totalExpenses).toLocaleString("en-IN")}
+              <p className="text-[10px] font-semibold text-savings">Savings</p>
+              <p className="mt-1 text-lg font-extrabold text-savings dark:text-white tabular-money">
+                ₹{totalIncome - totalExpenses >= 100000 ? `${((totalIncome - totalExpenses) / 100000).toFixed(1)}L` : (totalIncome - totalExpenses).toLocaleString("en-IN")}
               </p>
-              <p className="text-[10px] font-medium text-[#4f46e5]/70">
+              <p className="text-[10px] font-medium text-savings/70">
                 {savingsRate}% rate
               </p>
             </motion.div>
@@ -224,7 +227,7 @@ export function AnalyticsScreen({ onNavigate, transactions, monthlyBudget = 1600
                   <Button
                     onClick={() => onNavigate("add-expense")}
                     size="sm"
-                    className="rounded-xl bg-gradient-to-r from-[#ff6b5f] to-[#ff995c]"
+                    className="rounded-xl bg-expense hover:bg-expense/90"
                   >
                     <TrendingDown className="mr-1.5 size-3.5" />
                     Add Expense
@@ -240,7 +243,11 @@ export function AnalyticsScreen({ onNavigate, transactions, monthlyBudget = 1600
                     <CardContent className="p-4">
                       <p className="text-xs font-extrabold text-primary dark:text-primary">Spending by Category</p>
                       <div className="mt-2 flex items-center gap-4">
-                        <div className="h-28 w-28">
+                        <div
+                          className="h-28 w-28"
+                          role="img"
+                          aria-label={`Pie chart: top category is ${categoryData[0]?.name} at ₹${categoryData[0]?.value?.toLocaleString("en-IN")}`}
+                        >
                           <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
                               <Pie
@@ -256,6 +263,10 @@ export function AnalyticsScreen({ onNavigate, transactions, monthlyBudget = 1600
                                   <Cell key={idx} fill={entry.color} />
                                 ))}
                               </Pie>
+                              <Tooltip
+                                formatter={(value: number) => [`₹${value.toLocaleString("en-IN")}`, "Amount"]}
+                                contentStyle={{ fontSize: 11, borderRadius: 8, border: "1px solid rgba(0,0,0,0.1)" }}
+                              />
                             </PieChart>
                           </ResponsiveContainer>
                         </div>
@@ -283,18 +294,32 @@ export function AnalyticsScreen({ onNavigate, transactions, monthlyBudget = 1600
                   <Card className="bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
                     <CardContent className="p-4">
                       <p className="text-xs font-extrabold text-muted-foreground mb-3">Monthly Trend</p>
-                      <div className="h-40">
+                      <div
+                        className="h-40"
+                        role="img"
+                        aria-label={`Bar chart showing monthly income and expense trends for the last ${monthlyTrend.length} months`}
+                      >
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart data={monthlyTrend}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                            <XAxis dataKey="month" tick={{ fontSize: 10 }} />
-                            <YAxis tick={{ fontSize: 10 }} />
-                            <Tooltip 
-                              formatter={(value: number) => `₹${value.toLocaleString("en-IN")}`}
-                              contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" strokeOpacity={0.08} />
+                            <XAxis dataKey="month" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                            <YAxis
+                              tick={{ fontSize: 10 }}
+                              axisLine={false}
+                              tickLine={false}
+                              tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v}
                             />
-                            <Bar dataKey="income" fill="#16a34a" radius={[4, 4, 0, 0]} />
-                            <Bar dataKey="expense" fill="#dc2626" radius={[4, 4, 0, 0]} />
+                            <Tooltip
+                              formatter={(value: number) => `₹${value.toLocaleString("en-IN")}`}
+                              contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid rgba(0,0,0,0.1)" }}
+                            />
+                            <Legend
+                              formatter={(value) => value === "income" ? "Income" : "Expense"}
+                              iconSize={10}
+                              wrapperStyle={{ fontSize: 11, paddingTop: 8 }}
+                            />
+                            <Bar dataKey="income" fill="#16a34a" radius={[4, 4, 0, 0]} name="income" />
+                            <Bar dataKey="expense" fill="#dc2626" radius={[4, 4, 0, 0]} name="expense" />
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
@@ -309,7 +334,7 @@ export function AnalyticsScreen({ onNavigate, transactions, monthlyBudget = 1600
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-xs font-extrabold text-muted-foreground dark:text-white/60">Total Spent</p>
-                        <h3 className="mt-1 text-2xl font-extrabold dark:text-white">
+                        <h3 className="mt-1 text-2xl font-extrabold dark:text-white tabular-money">
                           ₹{totalExpenses.toLocaleString("en-IN")}
                         </h3>
                       </div>
@@ -340,7 +365,7 @@ export function AnalyticsScreen({ onNavigate, transactions, monthlyBudget = 1600
                   <CardContent className="p-3">
                     <p className="text-[10px] font-semibold text-muted-foreground uppercase">Top Expense</p>
                     <p className="text-lg font-extrabold dark:text-white">
-                      {topExpense ? `₹${parseInt(topExpense.amount.replace(/[^0-9]/g, "")).toLocaleString("en-IN")}` : "₹0"}
+                      {topExpense ? `₹${topExpense.amount.toLocaleString("en-IN")}` : "₹0"}
                     </p>
                   </CardContent>
                 </Card>
@@ -353,31 +378,70 @@ export function AnalyticsScreen({ onNavigate, transactions, monthlyBudget = 1600
                       <div className="mb-3 flex items-center justify-between">
                         <p className="text-xs font-extrabold text-muted-foreground">Budget Breakdown</p>
                         <span className="text-[10px] font-semibold text-primary">
-                          {timeRange === "week" ? "This Week" : 
+                          {timeRange === "week" ? "This Week" :
                            timeRange === "month" ? "This Month" :
                            timeRange === "quarter" ? "Last 3 Months" :
                            timeRange === "year" ? "This Year" : "All Time"}
                         </span>
                       </div>
-                      <div className="space-y-2.5">
-                        {categoryData.slice(0, 5).map((cat) => (
-                          <div key={cat.name}>
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs font-bold dark:text-white">{cat.name}</span>
-                              <span className="text-xs font-extrabold text-muted-foreground dark:text-white/70">
-                                ₹{cat.value.toLocaleString("en-IN")}
-                              </span>
+                      <div className="space-y-3.5">
+                        {categoryData.slice(0, 5).map((cat) => {
+                          const budget = categoryBudgets[cat.key] || 0;
+                          const spent = cat.value;
+                          const pct = budget > 0 ? (spent / budget) * 100 : 0;
+                          return (
+                            <div key={cat.key || cat.name}>
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-bold dark:text-white">{cat.name}</span>
+                                <span className="text-xs font-extrabold text-muted-foreground dark:text-white/70">
+                                  ₹{spent.toLocaleString("en-IN")}{budget > 0 ? ` / ₹${budget.toLocaleString("en-IN")}` : ""}
+                                </span>
+                              </div>
+                              {budget > 0 ? (
+                                <div className="mt-1">
+                                  <ProgressBar 
+                                    value={Math.min(pct, 100)} 
+                                    compact 
+                                    className={cn(
+                                      "mt-1",
+                                      pct > 100 ? "[&>div]:bg-red-500" : pct > 80 ? "[&>div]:bg-amber-500" : ""
+                                    )} 
+                                  />
+                                  <div className="flex justify-between items-center mt-0.5">
+                                    <span className={cn(
+                                      "text-[9px] font-bold",
+                                      pct > 100 ? "text-red-500" : pct > 80 ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"
+                                    )}>
+                                      {pct > 100 ? `${(pct - 100).toFixed(0)}% over limit!` : `${pct.toFixed(0)}% used`}
+                                    </span>
+                                    <span className="text-[9px] text-muted-foreground/50">
+                                      Limit: ₹{budget.toLocaleString("en-IN")}
+                                    </span>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="mt-1 flex items-center justify-between">
+                                  <div className="flex-1 mr-4">
+                                    <div className="h-1 bg-muted rounded-full w-full opacity-25" />
+                                  </div>
+                                  <button
+                                    onClick={() => onNavigate("categories")}
+                                    className="text-[9px] font-bold text-primary hover:underline cursor-pointer flex items-center gap-0.5"
+                                  >
+                                    + Set Limit
+                                  </button>
+                                </div>
+                              )}
                             </div>
-                            <ProgressBar value={Math.min((cat.value / monthlyBudget) * 100, 100)} compact className="mt-1" />
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </CardContent>
                   </Card>
                 </motion.div>
               )}
 
-              <motion.div variants={itemVariants} className="grid grid-cols-2 gap-2 mt-4">
+              <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-2 mt-4">
                 <Button variant="outline" onClick={() => onNavigate("goals")} className="h-12 dark:bg-white/5 card-hover">
                   <Target className="size-4 mr-2" />
                   Goals
@@ -399,8 +463,6 @@ export function AnalyticsScreen({ onNavigate, transactions, monthlyBudget = 1600
           )}
         </motion.div>
       </div>
-
-      <BottomNav active="Insights" onNavigate={onNavigate} />
     </PhoneFrame>
   );
 }

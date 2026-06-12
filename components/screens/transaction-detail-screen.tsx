@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 
-import { PhoneFrame, ScreenHeader, BottomNav, Field } from "@/components/shared";
+import { PhoneFrame, ScreenHeader, Field } from "@/components/shared";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -21,19 +21,25 @@ interface TransactionDetailScreenProps {
 
 export function TransactionDetailScreen({ transaction, onNavigate, onDelete, onEdit }: TransactionDetailScreenProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [editedAmount, setEditedAmount] = useState(transaction.amount);
+  const [editedAmount, setEditedAmount] = useState(transaction.amount.toString());
   const [editedTitle, setEditedTitle] = useState(transaction.title);
   const [editedNotes, setEditedNotes] = useState(transaction.detail);
 
   const handleSave = () => {
-    onEdit(transaction.id, { amount: editedAmount, title: editedTitle, detail: editedNotes });
+    const numericAmount = Math.round(parseFloat(editedAmount));
+    if (isNaN(numericAmount) || numericAmount <= 0) return;
+    onEdit(transaction.id, {
+      amount: numericAmount,
+      title: editedTitle,
+      detail: editedNotes,
+    });
     setIsEditing(false);
   };
 
   const categoryInfo = expenseCategories.find(c => c.value === transaction.category) || incomeCategories.find(c => c.value === transaction.category);
 
   return (
-    <PhoneFrame label="Transaction detail screen" className="pb-28">
+    <PhoneFrame label="Transaction detail screen" className="pb-28 lg:pb-0">
       <ScreenHeader
         eyebrow="Transaction"
         title="Details"
@@ -62,7 +68,7 @@ export function TransactionDetailScreen({ transaction, onNavigate, onDelete, onE
           <div className="space-y-4">
             <div className="flex justify-between items-center p-3 bg-muted/50 rounded-xl dark:bg-white/5">
               <span className="text-sm font-semibold text-muted-foreground">Type</span>
-              <Badge variant={transaction.type === "income" ? "secondary" : "outline"} className={transaction.type === "income" ? "bg-primary/10 text-primary" : "text-red-500"}>
+              <Badge variant="outline" className={transaction.type === "income" ? "bg-income-soft text-income border-income/20" : "bg-expense-soft text-expense border-expense/20"}>
                 {transaction.type.toUpperCase()}
               </Badge>
             </div>
@@ -77,8 +83,8 @@ export function TransactionDetailScreen({ transaction, onNavigate, onDelete, onE
               {isEditing ? (
                 <Input value={editedAmount} onChange={(e) => setEditedAmount(e.target.value)} className="w-32 text-right font-extrabold" />
               ) : (
-                <span className={`font-extrabold text-xl ${transaction.type === "income" ? "text-primary" : "text-red-500"}`}>
-                  {transaction.amount}
+                <span className={cn("font-extrabold text-xl tabular-money", transaction.type === "income" ? "text-income" : "text-expense")}>
+                  {transaction.type === "income" ? "+" : "-"}₹{transaction.amount.toLocaleString("en-IN")}
                 </span>
               )}
             </div>
@@ -102,14 +108,12 @@ export function TransactionDetailScreen({ transaction, onNavigate, onDelete, onE
             ) : (
               <>
                 <Button onClick={() => setIsEditing(true)} className="flex-1">Edit</Button>
-                <Button variant="destructive" onClick={() => { onDelete(transaction.id); onNavigate("transactions"); }} className="flex-1 bg-red-500 hover:bg-red-600">Delete</Button>
+                <Button variant="destructive" onClick={() => { onDelete(transaction.id); onNavigate("transactions"); }} className="flex-1 bg-expense hover:bg-expense/90">Delete</Button>
               </>
             )}
           </div>
         </CardContent>
       </Card>
-
-      <BottomNav active="History" onNavigate={onNavigate} />
     </PhoneFrame>
   );
 }

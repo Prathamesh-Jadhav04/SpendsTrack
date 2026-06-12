@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Trash2, Target, ArrowLeft } from "lucide-react";
+import { Trash2, Target, ArrowLeft, AlertTriangle } from "lucide-react";
 
-import { PhoneFrame, ScreenHeader, BottomNav, Field, ModalOverlay, ModalContent, ProgressBar, EmptyState } from "@/components/shared";
+import { PhoneFrame, ScreenHeader, Field, ModalOverlay, ModalContent, ProgressBar, EmptyState } from "@/components/shared";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,9 @@ interface GoalsScreenProps {
 export function GoalsScreen({ onNavigate, goals, onAddGoal, onUpdateProgress, onDeleteGoal }: GoalsScreenProps) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showFundModal, setShowFundModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [fundGoalId, setFundGoalId] = useState<string | null>(null);
+  const [deleteGoalId, setDeleteGoalId] = useState<string | null>(null);
   const [fundAmount, setFundAmount] = useState("");
   const [newGoal, setNewGoal] = useState({ name: "", target: 10000, deadline: "", color: "#7766e8" });
   const colors = ["#7766e8", "#10b889", "#f4b740", "#ff6b5f", "#64a7ff"];
@@ -44,9 +46,17 @@ export function GoalsScreen({ onNavigate, goals, onAddGoal, onUpdateProgress, on
     }
   };
 
+  const handleDeleteGoal = () => {
+    if (deleteGoalId) {
+      onDeleteGoal(deleteGoalId);
+      setShowDeleteModal(false);
+      setDeleteGoalId(null);
+    }
+  };
+
   return (
-    <PhoneFrame label="Goals screen" className="pb-28">
-      <div className="h-full flex flex-col overflow-y-auto no-scrollbar smooth-scroll momentum-scroll">
+    <PhoneFrame label="Goals screen" className="pb-28 lg:pb-0">
+      <div className="flex flex-col overflow-y-auto no-scrollbar smooth-scroll momentum-scroll lg:h-auto lg:overflow-visible">
         <ScreenHeader
           eyebrow="Savings"
           title="Goals"
@@ -74,7 +84,10 @@ export function GoalsScreen({ onNavigate, goals, onAddGoal, onUpdateProgress, on
                       <h4 className="font-extrabold text-base">{goal.name}</h4>
                       <p className="text-xs text-muted-foreground">Target: ₹{goal.target.toLocaleString("en-IN")}</p>
                     </div>
-                    <button onClick={() => onDeleteGoal(goal.id)} className="p-2 text-muted-foreground hover:text-red-500">
+                    <button
+                      onClick={() => { setDeleteGoalId(goal.id); setShowDeleteModal(true); }}
+                      className="p-2 text-muted-foreground hover:text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                    >
                       <Trash2 className="size-4" />
                     </button>
                   </div>
@@ -118,7 +131,7 @@ export function GoalsScreen({ onNavigate, goals, onAddGoal, onUpdateProgress, on
       {showAddModal && (
         <ModalOverlay onClose={() => setShowAddModal(false)}>
           <ModalContent title="Add New Goal" onClose={() => setShowAddModal(false)}>
-            <div className="space-y-3">
+            <div className="space-y-4">
               <Field label="Goal Name">
                 <Input
                   value={newGoal.name}
@@ -146,7 +159,7 @@ export function GoalsScreen({ onNavigate, goals, onAddGoal, onUpdateProgress, on
                     <button
                       key={color}
                       onClick={() => setNewGoal(g => ({ ...g, color }))}
-                      className={cn("w-8 h-8 rounded-full border-2", newGoal.color === color ? "border-black dark:border-white" : "border-transparent")}
+                      className={cn("w-8 h-8 rounded-full border-2 transition-transform", newGoal.color === color ? "border-black dark:border-white scale-110" : "border-transparent")}
                       style={{ backgroundColor: color }}
                     />
                   ))}
@@ -161,7 +174,7 @@ export function GoalsScreen({ onNavigate, goals, onAddGoal, onUpdateProgress, on
       {showFundModal && (
         <ModalOverlay onClose={() => setShowFundModal(false)}>
           <ModalContent title="Add Funds" onClose={() => setShowFundModal(false)}>
-            <div className="space-y-3">
+            <div className="space-y-4">
               <Field label="Amount">
                 <Input
                   type="number"
@@ -177,7 +190,37 @@ export function GoalsScreen({ onNavigate, goals, onAddGoal, onUpdateProgress, on
         </ModalOverlay>
       )}
 
-      <BottomNav active="Insights" onNavigate={onNavigate} />
+      {showDeleteModal && (
+        <ModalOverlay onClose={() => setShowDeleteModal(false)}>
+          <ModalContent title="Delete Goal" onClose={() => setShowDeleteModal(false)}>
+            <div className="text-center">
+              <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4 dark:bg-red-900/30">
+                <AlertTriangle className="size-8 text-red-500" />
+              </div>
+              <p className="font-bold text-lg">Delete this goal?</p>
+              <p className="text-sm text-muted-foreground mt-2 mb-6">
+                This action cannot be undone. All progress will be lost.
+              </p>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowDeleteModal(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleDeleteGoal}
+                  className="flex-1 bg-red-500 hover:bg-red-600"
+                >
+                  Delete
+                </Button>
+              </div>
+            </div>
+          </ModalContent>
+        </ModalOverlay>
+      )}
     </PhoneFrame>
   );
 }

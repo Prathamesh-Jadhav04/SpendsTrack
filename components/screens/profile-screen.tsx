@@ -22,9 +22,13 @@ import {
   LogOut,
   User,
   Camera,
+  TrendingDown,
+  ReceiptText,
+  Tags,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
+import { expenseCategories, incomeCategories, APP_VERSION } from "@/components/constants";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -34,7 +38,6 @@ import { Switch } from "@/components/ui/switch";
 import {
   PhoneFrame,
   ScreenHeader,
-  BottomNav,
   Field,
   ModalOverlay,
   ModalContent,
@@ -50,10 +53,12 @@ interface ProfileScreenProps {
   monthlyBudget?: number;
   setMonthlyBudget?: (value: number) => void;
   onExport?: () => void;
+  showToast?: (message: string, duration?: number, type?: "success" | "error" | "info" | "coming") => void;
   user?: UserType | null;
   transactions?: Transaction[];
   transactionHistory?: Transaction[];
   customCategories?: { type: string }[];
+  onUpdateProfile?: (data: { name: string }) => void;
 }
 
 export function ProfileScreen({
@@ -62,10 +67,12 @@ export function ProfileScreen({
   monthlyBudget = 160000,
   setMonthlyBudget,
   onExport,
+  showToast: globalShowToast,
   user,
   transactions = [],
   transactionHistory = [],
   customCategories = [],
+  onUpdateProfile,
 }: ProfileScreenProps) {
   const { theme, toggleTheme } = useTheme();
   const isDark = theme === "dark";
@@ -96,11 +103,11 @@ export function ProfileScreen({
     expiry: "",
     upi: "",
   });
-  const [toast, setToast] = useState<string | null>(null);
 
   const showToast = (message: string) => {
-    setToast(message);
-    setTimeout(() => setToast(null), 2500);
+    if (globalShowToast) {
+      globalShowToast(message);
+    }
   };
 
   const validateForm = () => {
@@ -116,7 +123,11 @@ export function ProfileScreen({
   const handleSaveProfile = () => {
     if (validateForm()) {
       setIsEditing(false);
-      showToast("Profile updated successfully!");
+      if (onUpdateProfile) {
+        onUpdateProfile({ name: profileData.name });
+      } else {
+        showToast("Profile updated successfully!");
+      }
     }
   };
 
@@ -163,8 +174,11 @@ export function ProfileScreen({
   };
 
   const handleDeleteAccount = () => {
+    localStorage.removeItem("spendstracks_data");
+    localStorage.removeItem("spendstracks_users");
     setActiveModal(null);
-    showToast("Account deletion initiated. Please confirm via email.");
+    showToast("Account and all data deleted permanently");
+    setTimeout(() => onLogout(), 1000);
   };
 
   const languages = [
@@ -195,7 +209,7 @@ export function ProfileScreen({
 
   const totalExpense = transactionHistory
     .filter((t) => t.type === "expense")
-    .reduce((sum, t) => sum + parseInt(t.amount.replace(/[^0-9]/g, "")), 0);
+    .reduce((sum, t) => sum + t.amount, 0);
   const totalTransactions = transactionHistory.length;
   const totalCategories = new Set(transactionHistory.map((t) => t.category)).size + customCategories.length;
 
@@ -219,8 +233,8 @@ export function ProfileScreen({
   };
 
   return (
-    <PhoneFrame label="Profile and settings screen" className="pb-28">
-      <div className="h-full flex flex-col overflow-y-auto no-scrollbar smooth-scroll momentum-scroll">
+    <PhoneFrame label="Profile and settings screen" className="pb-28 lg:pb-0">
+      <div className="flex flex-col overflow-y-auto no-scrollbar smooth-scroll momentum-scroll lg:h-auto lg:overflow-visible">
         <ScreenHeader
           eyebrow="Account"
           title="Profile"
@@ -240,7 +254,7 @@ export function ProfileScreen({
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-4 rounded-3xl bg-white p-5 shadow-lg dark:bg-card dark:border dark:border-white/10"
+            className="mb-6 rounded-3xl bg-white p-5 shadow-lg dark:bg-card dark:border dark:border-white/10"
           >
             <div className="flex justify-center mb-4">
               <motion.div
@@ -248,7 +262,7 @@ export function ProfileScreen({
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <div className="size-20 rounded-full bg-gradient-to-br from-[#7766e8] to-[#4f46e5] flex items-center justify-center">
+                <div className="size-20 rounded-full bg-gradient-to-br from-savings to-savings-soft flex items-center justify-center">
                   <span className="text-4xl text-white font-bold">
                     {profileData.name.charAt(0).toUpperCase()}
                   </span>
@@ -319,7 +333,7 @@ export function ProfileScreen({
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-4 flex items-center gap-4 rounded-3xl bg-gradient-to-br from-[#7766e8] via-[#6366f1] to-[#4f46e5] p-5 shadow-lg shadow-purple-500/20"
+            className="mb-4 flex items-center gap-4 rounded-3xl bg-gradient-to-br from-savings to-savings-soft p-5 shadow-lg shadow-savings/20"
             whileHover={{ scale: 1.01 }}
           >
             <motion.div className="relative" whileHover={{ scale: 1.1 }}>
@@ -368,40 +382,42 @@ export function ProfileScreen({
           animate="visible"
           className="space-y-4"
         >
-          <motion.div variants={itemVariants} className="grid grid-cols-3 gap-2">
+          <motion.div variants={itemVariants} className="grid grid-cols-3 gap-3 lg:gap-4">
             {[
               {
                 label: "Total Spent",
                 value: formatLargeNumber(totalExpense),
-                emoji: "💰",
-                color: "from-[#fee2e2] to-[#fecaca]",
+                icon: TrendingDown,
+                iconColor: "text-expense",
+                color: "from-ds-canvas to-expense-soft/10 dark:from-ds-canvas-soft-2 dark:to-expense-soft/5",
               },
               {
                 label: "Transactions",
                 value: totalTransactions.toString(),
-                emoji: "📊",
-                color: "from-[#e0e7ff] to-[#c7d2fe]",
+                icon: ReceiptText,
+                iconColor: "text-savings",
+                color: "from-ds-canvas to-savings-soft/10 dark:from-ds-canvas-soft-2 dark:to-savings-soft/5",
               },
               {
                 label: "Categories",
                 value: totalCategories.toString(),
-                emoji: "🏷️",
-                color: "from-[#dcfce7] to-[#bbf7d0]",
+                icon: Tags,
+                iconColor: "text-income",
+                color: "from-ds-canvas to-income-soft/10 dark:from-ds-canvas-soft-2 dark:to-income-soft/5",
               },
             ].map((stat, i) => (
               <motion.div
                 key={i}
-                className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${stat.color} p-3 dark:from-[#1a1a2e] dark:to-[#0a0a15] card-hover`}
+                className={cn(
+                  "relative overflow-hidden rounded-2xl bg-gradient-to-br border border-border/50 dark:border-white/5 p-3 card-hover",
+                  stat.color
+                )}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <motion.div
-                  className="absolute -right-2 -top-2 text-2xl"
-                  animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.1, 1] }}
-                  transition={{ duration: 2, repeat: Infinity, delay: i * 0.3 }}
-                >
-                  {stat.emoji}
-                </motion.div>
+                <div className="absolute right-2 top-2 opacity-30">
+                  <stat.icon className={cn("size-5", stat.iconColor)} />
+                </div>
                 <p className="text-[10px] font-semibold text-muted-foreground dark:text-white/60">
                   {stat.label}
                 </p>
@@ -961,35 +977,20 @@ export function ProfileScreen({
           </ModalOverlay>
         )}
 
-        <AnimatePresence>
-          {toast && (
-            <motion.div
-              initial={{ opacity: 0, y: 20, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.95 }}
-              className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-primary text-white px-4 py-2 rounded-full font-semibold text-sm shadow-lg z-50"
-            >
-              {toast}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
         <motion.button
           onClick={onLogout}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-[#fee2e2] bg-[#fef2f2] text-sm font-bold text-[#dc2626] transition-colors hover:bg-[#fee2e2] dark:border-[#7f1d1d] dark:bg-[#450a0a] dark:text-[#fca5a5] dark:hover:bg-[#7f1d1d]"
+          className="mt-6 mb-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-expense-soft bg-expense-soft/30 text-sm font-bold text-expense transition-colors hover:bg-expense-soft/50 dark:border-red-950/40 dark:bg-red-950/20 dark:text-red-400 dark:hover:bg-red-950/40"
         >
           <LogOut className="size-4" />
           Logout
         </motion.button>
 
-        <p className="mt-4 text-center text-xs font-medium text-muted-foreground">
-          SpendsTracks v1.1.1 • Made with ❤️
+        <p className="mb-4 text-center text-xs font-medium text-muted-foreground">
+          SpendsTracks v{APP_VERSION}
         </p>
       </div>
-
-      <BottomNav active="Profile" onNavigate={onNavigate} />
     </PhoneFrame>
   );
 }

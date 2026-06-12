@@ -2,7 +2,7 @@ export type Transaction = {
   id: string;
   title: string;
   detail: string;
-  amount: string;
+  amount: number;
   tone: string;
   icon: string;
   date?: string;
@@ -60,7 +60,8 @@ export type Screen =
   | "goals"
   | "recurring"
   | "reports"
-  | "categories";
+  | "categories"
+  | "ask-ai";
 
 export type FilterType = "all" | "expense" | "income";
 
@@ -93,6 +94,7 @@ export interface AppData {
   goals: Goal[];
   recurring: Recurring[];
   customCategories: CustomCategory[];
+  categoryBudgets: Record<string, number>;
   monthlyBudget: number;
   user: User | null;
 }

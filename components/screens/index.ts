@@ -9,3 +9,4 @@ export { GoalsScreen } from "./goals-screen";
 export { RecurringScreen } from "./recurring-screen";
 export { ReportsScreen } from "./reports-screen";
 export { CategoriesScreen } from "./categories-screen";
+export { AskAIScreen } from "./ask-ai-screen";

@@ -5,10 +5,7 @@ import { PhoneFrame, BrandMark } from "@/components/shared";
 
 export function SplashScreen() {
   return (
-    <PhoneFrame
-      label="Splash screen"
-      className="items-center justify-center bg-gradient-to-br from-white via-[#edf8f1] to-[#f8f1e6] text-center dark:from-[#0a0a0a] dark:via-[#0f1412] dark:to-[#0a0a0a]"
-    >
+    <div className="w-full flex flex-col items-center justify-center bg-ds-canvas-soft text-center py-12 relative">
       <motion.div
         className="grid justify-items-center gap-6"
         initial={{ scale: 0.96, opacity: 0 }}
@@ -16,13 +13,14 @@ export function SplashScreen() {
         transition={{ duration: 0.45, ease: "easeOut" }}
       >
         <motion.div
-          animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
-          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
         >
           <BrandMark />
         </motion.div>
         <div className="space-y-2">
-          <h1 className="text-4xl font-extrabold tracking-normal bg-gradient-to-r from-primary to-[#0d9973] bg-clip-text text-transparent">
+          <h1 className="text-4xl font-extrabold tracking-normal bg-gradient-to-r from-primary to-income bg-clip-text text-transparent">
             SpendsTracks
           </h1>
           <p className="text-base font-semibold text-muted-foreground">
@@ -45,6 +43,6 @@ export function SplashScreen() {
           ))}
         </motion.div>
       </motion.div>
-    </PhoneFrame>
+    </div>
   );
 }

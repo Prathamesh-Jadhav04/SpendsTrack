@@ -7,12 +7,14 @@ export function StatCard({
   value,
   detail,
   tone,
+  className,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
   detail?: string;
   tone: "income" | "expense";
+  className?: string;
 }) {
   return (
     <Card
@@ -37,7 +39,7 @@ export function StatCard({
         <p className="text-xs font-extrabold text-muted-foreground dark:text-white/50">
           {label}
         </p>
-        <strong className="mt-1 block text-xl font-extrabold dark:text-white">
+        <strong className={cn("mt-1 block text-xl font-extrabold dark:text-white tabular-money", className)}>
           {value}
         </strong>
         {detail ? (

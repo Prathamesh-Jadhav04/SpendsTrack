@@ -4,12 +4,12 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Trash2, RefreshCcw, TrendingUp, TrendingDown, ArrowLeft } from "lucide-react";
 
-import { PhoneFrame, ScreenHeader, BottomNav, Field, ModalOverlay, ModalContent, EmptyState } from "@/components/shared";
+import { PhoneFrame, ScreenHeader, Field, ModalOverlay, ModalContent, EmptyState } from "@/components/shared";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { expenseCategories } from "@/components/constants";
+import { expenseCategories, incomeCategories } from "@/components/constants";
 import { cn } from "@/lib/utils";
 import type { Recurring, Screen } from "@/components/types";
 
@@ -32,9 +32,11 @@ export function RecurringScreen({ onNavigate, recurring, onAddRecurring, onDelet
     }
   };
 
+  const allCategories = [...expenseCategories, ...incomeCategories];
+
   return (
-    <PhoneFrame label="Recurring screen" className="pb-28">
-      <div className="h-full flex flex-col overflow-y-auto no-scrollbar smooth-scroll momentum-scroll">
+    <PhoneFrame label="Recurring screen" className="pb-28 lg:pb-0">
+      <div className="flex flex-col overflow-y-auto no-scrollbar smooth-scroll momentum-scroll lg:h-auto lg:overflow-visible">
         <ScreenHeader
           eyebrow="Automatic"
           title="Recurring"
@@ -55,7 +57,7 @@ export function RecurringScreen({ onNavigate, recurring, onAddRecurring, onDelet
               <CardContent className="p-4">
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-3">
-                    <div className={cn("size-10 rounded-xl flex items-center justify-center font-bold", item.type === "income" ? "bg-secondary text-primary" : "bg-[#fff0ee] text-red-500")}>
+                    <div className={cn("size-10 rounded-xl flex items-center justify-center font-bold", item.type === "income" ? "bg-income-soft text-income" : "bg-expense-soft text-expense")}>
                       {item.type === "income" ? <TrendingUp className="size-5" /> : <TrendingDown className="size-5" />}
                     </div>
                     <div>
@@ -63,12 +65,12 @@ export function RecurringScreen({ onNavigate, recurring, onAddRecurring, onDelet
                       <p className="text-xs text-muted-foreground capitalize">{item.frequency} • {item.category}</p>
                     </div>
                   </div>
-                  <button onClick={() => onDeleteRecurring(item.id)} className="p-2 text-muted-foreground hover:text-red-500">
+                  <button onClick={() => onDeleteRecurring(item.id)} className="p-2 text-muted-foreground hover:text-expense rounded-lg hover:bg-expense-soft/30 transition-colors">
                     <Trash2 className="size-4" />
                   </button>
                 </div>
                 <div className="mt-3 flex justify-between items-center">
-                  <span className={`font-extrabold text-lg ${item.type === "income" ? "text-primary" : "text-red-500"}`}>
+                  <span className={cn("font-extrabold text-lg tabular-money", item.type === "income" ? "text-income" : "text-expense")}>
                     {item.type === "income" ? "+" : "-"}₹{item.amount.toLocaleString("en-IN")}
                   </span>
                   <span className="text-xs text-muted-foreground">Next: {new Date(item.nextDate).toLocaleDateString("en-IN")}</span>
@@ -91,7 +93,7 @@ export function RecurringScreen({ onNavigate, recurring, onAddRecurring, onDelet
       {showAddModal && (
         <ModalOverlay onClose={() => setShowAddModal(false)}>
           <ModalContent title="Add Recurring" onClose={() => setShowAddModal(false)}>
-            <div className="space-y-3">
+            <div className="space-y-4">
               <Field label="Title">
                 <Input
                   value={newRecurring.title}
@@ -102,8 +104,9 @@ export function RecurringScreen({ onNavigate, recurring, onAddRecurring, onDelet
               <Field label="Amount">
                 <Input
                   type="number"
-                  value={newRecurring.amount}
+                  value={newRecurring.amount || ""}
                   onChange={(e) => setNewRecurring(r => ({ ...r, amount: parseInt(e.target.value) || 0 }))}
+                  placeholder="Enter amount"
                 />
               </Field>
               <Field label="Type">
@@ -119,7 +122,7 @@ export function RecurringScreen({ onNavigate, recurring, onAddRecurring, onDelet
                 <Select value={newRecurring.category} onValueChange={(v) => setNewRecurring(r => ({ ...r, category: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {expenseCategories.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                    {allCategories.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </Field>
@@ -138,8 +141,6 @@ export function RecurringScreen({ onNavigate, recurring, onAddRecurring, onDelet
           </ModalContent>
         </ModalOverlay>
       )}
-
-      <BottomNav active="Insights" onNavigate={onNavigate} />
     </PhoneFrame>
   );
 }

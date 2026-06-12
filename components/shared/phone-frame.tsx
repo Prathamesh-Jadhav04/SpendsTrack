@@ -16,16 +16,17 @@ export function PhoneFrame({
   return (
     <motion.section
       aria-label={label}
-      className="mx-auto w-full max-w-[480px] rounded-[2.35rem] border-2 border-white/10 bg-black/80 p-3 shadow-2xl shadow-black/50 backdrop-blur dark:border-white/5 dark:bg-black/60"
+      className="mx-auto w-full lg:max-w-none lg:mx-0 lg:w-full"
       initial="hidden"
       whileInView="visible"
-      viewport={{ once: true, amount: 0.22 }}
+      viewport={{ once: true, amount: 0.1 }}
       variants={screenAnimation}
       transition={{ duration: 0.45, ease: "easeOut" }}
     >
       <div
         className={cn(
-          "relative flex h-[850px] flex-col overflow-hidden rounded-[1.9rem] bg-gradient-to-b from-white to-[#f8faf4] p-6 dark:from-[#0a0a0a] dark:to-[#050505]",
+          "relative flex min-h-screen flex-col overflow-hidden bg-background p-4 dark:bg-background pb-32",
+          "lg:min-h-0 lg:rounded-none lg:bg-transparent lg:dark:bg-transparent lg:p-0 lg:pb-0",
           className
         )}
       >

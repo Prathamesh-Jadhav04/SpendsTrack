@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, TrendingDown, TrendingUp, ReceiptText, ArrowUpDown, Calendar, Filter, X, ArrowLeft, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PhoneFrame, ScreenHeader, BottomNav, TransactionRow, EmptyState, StatCard } from "@/components/shared";
+import { PhoneFrame, ScreenHeader, TransactionRow, EmptyState, StatCard } from "@/components/shared";
 import type { Screen, Transaction, FilterType } from "@/components/types";
 
 interface TransactionsScreenProps {
@@ -57,7 +57,7 @@ export function TransactionsScreen({
     { label: "Income", value: "income" },
   ];
 
-  const getDateRange = () => {
+  const getDateRange = useMemo(() => {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const weekAgo = new Date(today);
@@ -75,30 +75,28 @@ export function TransactionsScreen({
       default:
         return null;
     }
-  };
+  }, [dateFilter]);
 
-  const applyFilters = () => {
+  const filteredTransactions = useMemo(() => {
     let filtered = [...transactions];
 
     if (filter !== "all") {
-      filtered = filtered.filter((t) =>
-        filter === "expense" ? t.type === "expense" : t.type === "income"
-      );
+      filtered = filtered.filter((t) => t.type === filter);
     }
 
-    const dateRange = getDateRange();
-    if (dateRange) {
+    if (getDateRange) {
       filtered = filtered.filter((t) => {
         if (!t.date) return false;
-        return new Date(t.date) >= dateRange;
+        return new Date(t.date) >= getDateRange;
       });
     }
 
     if (localQuery) {
+      const q = localQuery.toLowerCase();
       filtered = filtered.filter(
         (t) =>
-          t.title.toLowerCase().includes(localQuery.toLowerCase()) ||
-          t.detail.toLowerCase().includes(localQuery.toLowerCase())
+          t.title.toLowerCase().includes(q) ||
+          t.detail.toLowerCase().includes(q)
       );
     }
 
@@ -116,32 +114,29 @@ export function TransactionsScreen({
         });
         break;
       case "highest":
-        filtered.sort((a, b) => {
-          const aAmt = parseInt(a.amount.replace(/[^0-9]/g, ""));
-          const bAmt = parseInt(b.amount.replace(/[^0-9]/g, ""));
-          return bAmt - aAmt;
-        });
+        filtered.sort((a, b) => b.amount - a.amount);
         break;
       case "lowest":
-        filtered.sort((a, b) => {
-          const aAmt = parseInt(a.amount.replace(/[^0-9]/g, ""));
-          const bAmt = parseInt(b.amount.replace(/[^0-9]/g, ""));
-          return aAmt - bAmt;
-        });
+        filtered.sort((a, b) => a.amount - b.amount);
         break;
     }
 
     return filtered;
-  };
+  }, [transactions, filter, dateFilter, localQuery, sortBy, getDateRange]);
 
-  const filteredTransactions = applyFilters();
+  const totalSpent = useMemo(() =>
+    transactions
+      .filter((t) => t.type === "expense")
+      .reduce((sum, t) => sum + t.amount, 0),
+    [transactions]
+  );
 
-  const totalSpent = transactions
-    .filter((t) => t.type === "expense")
-    .reduce((sum, t) => sum + parseInt(t.amount.replace(/[^0-9]/g, "")), 0);
-  const totalEarned = transactions
-    .filter((t) => t.type === "income")
-    .reduce((sum, t) => sum + parseInt(t.amount.replace(/[^0-9]/g, "")), 0);
+  const totalEarned = useMemo(() =>
+    transactions
+      .filter((t) => t.type === "income")
+      .reduce((sum, t) => sum + t.amount, 0),
+    [transactions]
+  );
 
   const activeFiltersCount = (dateFilter !== "all" ? 1 : 0) + (sortBy !== "newest" ? 1 : 0);
 
@@ -159,8 +154,8 @@ export function TransactionsScreen({
   };
 
   return (
-    <PhoneFrame label="Transactions screen" className="pb-28">
-      <div className="h-full flex flex-col overflow-y-auto no-scrollbar smooth-scroll momentum-scroll">
+    <PhoneFrame label="Transactions screen" className="pb-28 lg:pb-0">
+      <div className="flex flex-col overflow-y-auto no-scrollbar smooth-scroll momentum-scroll lg:h-auto lg:overflow-visible">
         <ScreenHeader eyebrow="Activity" title="Transactions" />
 
         <motion.div
@@ -172,7 +167,7 @@ export function TransactionsScreen({
             <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               className="bg-white pl-11 shadow-soft dark:bg-card dark:border dark:border-white/10 input-glow transition-all"
-              placeholder="Search transactions"
+              placeholder="Search transactions…"
               type="search"
               aria-label="Search transactions"
               value={localQuery}
@@ -309,19 +304,21 @@ export function TransactionsScreen({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.2 }}
-          className="mb-5 grid grid-cols-2 gap-3"
+          className="mb-5 lg:mb-8 grid grid-cols-2 gap-3 lg:gap-4"
         >
           <StatCard
             icon={<TrendingDown className="size-5" />}
             label="Spent"
             value={`₹${totalSpent.toLocaleString("en-IN")}`}
             tone="expense"
+            className="tabular-money"
           />
           <StatCard
             icon={<TrendingUp className="size-5" />}
             label="Earned"
             value={`₹${totalEarned.toLocaleString("en-IN")}`}
             tone="income"
+            className="tabular-money"
           />
         </motion.div>
 
@@ -329,8 +326,9 @@ export function TransactionsScreen({
           variants={containerVariants}
           initial="hidden"
           animate="visible"
+          className="w-full"
         >
-          <Card className="bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
+          <Card className="w-full bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
             <CardContent className="grid gap-3 p-4">
               {filteredTransactions.length > 0 ? (
                 filteredTransactions.map((transaction, idx) => (
@@ -358,7 +356,7 @@ export function TransactionsScreen({
                         <Button
                           onClick={() => onNavigate("add-expense")}
                           size="sm"
-                          className="rounded-xl bg-gradient-to-r from-[#ff6b5f] to-[#ff995c]"
+                          className="rounded-xl bg-expense hover:bg-expense/90"
                         >
                           <TrendingDown className="mr-1.5 size-3.5" />
                           Add Expense
@@ -383,8 +381,6 @@ export function TransactionsScreen({
           </motion.p>
         )}
       </div>
-
-      <BottomNav active="History" onNavigate={onNavigate} />
     </PhoneFrame>
   );
 }

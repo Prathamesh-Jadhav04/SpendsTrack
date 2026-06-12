@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CalendarDays, Check, TrendingDown, TrendingUp, DollarSign, Tag, FileText } from "lucide-react";
+import { CalendarDays, Check, TrendingDown, TrendingUp, IndianRupee, Tag, FileText } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { PhoneFrame, ScreenHeader, BottomNav, Field } from "@/components/shared";
+import { PhoneFrame, ScreenHeader, Field } from "@/components/shared";
 import type { Screen } from "@/components/types";
 import { expenseCategories, incomeCategories } from "@/components/constants";
 
@@ -31,35 +31,45 @@ export function AddTransactionScreen({ onNavigate, onSave, type: initialType }: 
   const [isSaving, setIsSaving] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [amount, setAmount] = useState("");
+  const [category, setCategory] = useState("");
+  const [date, setDate] = useState(today);
+  const [notes, setNotes] = useState("");
+  const [error, setError] = useState("");
 
   const categories = transactionType === "expense" ? expenseCategories : incomeCategories;
   const title = transactionType === "expense" ? "Add Expense" : "Add Income";
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const form = e.currentTarget;
-    const formData = new FormData(form);
-    const amountVal = formData.get("amount") as string;
-    const category = formData.get("category") as string;
+    setError("");
 
-    if (!amountVal || parseFloat(amountVal) <= 0) {
-      onNavigate("dashboard");
+    if (!amount || parseFloat(amount) <= 0) {
+      setError("Please enter a valid amount greater than 0");
+      document.getElementById("amount")?.focus();
       return;
     }
     if (!category) {
-      onNavigate("dashboard");
+      setError("Please select a category");
+      const categoryTrigger = document.querySelector('button[aria-label="Select category"]') as HTMLButtonElement | null;
+      categoryTrigger?.focus();
       return;
     }
 
     setIsSaving(true);
     await new Promise((resolve) => setTimeout(resolve, 300));
     onSave({
-      amount: amountVal,
+      amount,
       category,
-      date: formData.get("date") as string,
-      notes: formData.get("notes") as string,
+      date,
+      notes,
       type: transactionType,
     });
+
+    setAmount("");
+    setCategory("");
+    setDate(today);
+    setNotes("");
+    setError("");
     setIsSaving(false);
     onNavigate("dashboard");
   };
@@ -78,7 +88,7 @@ export function AddTransactionScreen({ onNavigate, onSave, type: initialType }: 
   };
 
   return (
-    <PhoneFrame label={`Add ${transactionType} screen`} className="pb-28">
+    <PhoneFrame label={`Add ${transactionType} screen`} className="pb-28 lg:pb-0">
       <ScreenHeader eyebrow="New entry" title={title} />
 
       <motion.div
@@ -95,7 +105,7 @@ export function AddTransactionScreen({ onNavigate, onSave, type: initialType }: 
           className={cn(
             "flex-1 h-11 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all",
             transactionType === "expense"
-              ? "bg-gradient-to-r from-[#ff6b5f] to-[#ff995c] text-white shadow-lg shadow-[#ff6b5f]/20"
+              ? "bg-expense text-white shadow-level-2"
               : "bg-muted text-muted-foreground hover:bg-muted/80"
           )}
         >
@@ -110,7 +120,7 @@ export function AddTransactionScreen({ onNavigate, onSave, type: initialType }: 
           className={cn(
             "flex-1 h-11 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all",
             transactionType === "income"
-              ? "bg-gradient-to-r from-primary to-[#10b889] text-white shadow-lg shadow-primary/20"
+              ? "bg-income text-white shadow-level-2"
               : "bg-muted text-muted-foreground hover:bg-muted/80"
           )}
         >
@@ -119,7 +129,7 @@ export function AddTransactionScreen({ onNavigate, onSave, type: initialType }: 
         </motion.button>
       </motion.div>
 
-      <Card className="bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
+      <Card className="w-full bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
         <CardContent className="grid gap-4 p-5">
           <motion.form
             variants={containerVariants}
@@ -129,20 +139,26 @@ export function AddTransactionScreen({ onNavigate, onSave, type: initialType }: 
             className="grid gap-5"
           >
             <motion.div variants={itemVariants}>
-              <Field label="Amount">
+              <Field label="Amount" required>
                 <div className="relative">
-                  <DollarSign className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
+                  <IndianRupee className="pointer-events-none absolute left-3 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                    name="amount"
-                    className="h-16 pl-12 text-3xl font-extrabold dark:bg-background input-glow transition-all"
-                    placeholder="₹0.00"
+                    id="amount"
+                    className="h-16 pl-11 text-2xl font-extrabold dark:bg-background input-glow transition-all tabular-money"
+                    placeholder="e.g. 500.00…"
                     inputMode="decimal"
                     required
                     min="1"
                     step="1"
-                    aria-label={`${transactionType} amount`}
+                    autoComplete="off"
+                    aria-label={`${transactionType} amount in rupees`}
+                    aria-describedby={error ? "form-error" : undefined}
+                    aria-invalid={!!error}
                     value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
+                    onChange={(e) => {
+                      setAmount(e.target.value);
+                      if (error) setError("");
+                    }}
                     onFocus={() => setFocusedField("amount")}
                     onBlur={() => setFocusedField(null)}
                   />
@@ -152,11 +168,9 @@ export function AddTransactionScreen({ onNavigate, onSave, type: initialType }: 
                         initial={{ opacity: 0, scaleX: 0 }}
                         animate={{ opacity: 1, scaleX: 1 }}
                         exit={{ opacity: 0, scaleX: 0 }}
-                        className={`absolute bottom-0 left-0 right-0 h-0.5 origin-left ${
-                          transactionType === "expense"
-                            ? "bg-gradient-to-r from-[#ff6b5f] to-[#ff995c]"
-                            : "bg-gradient-to-r from-primary to-[#10b889]"
-                        }`}
+                         className={`absolute bottom-0 left-0 right-0 h-0.5 origin-left ${
+                           transactionType === "expense" ? "bg-expense" : "bg-income"
+                         }`}
                       />
                     )}
                   </AnimatePresence>
@@ -168,9 +182,9 @@ export function AddTransactionScreen({ onNavigate, onSave, type: initialType }: 
               <Field label="Category">
                 <div className="relative">
                   <Tag className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground z-10" />
-                  <Select name="category" required>
+                  <Select value={category} onValueChange={(v) => { setCategory(v); if (error) setError(""); }}>
                     <SelectTrigger aria-label="Select category" className="dark:bg-background pl-11 input-glow transition-all">
-                      <SelectValue placeholder="Choose category" />
+                      <SelectValue placeholder="Select category…" />
                     </SelectTrigger>
                     <SelectContent className="dark:bg-card">
                       {categories.map((cat) => (
@@ -189,10 +203,10 @@ export function AddTransactionScreen({ onNavigate, onSave, type: initialType }: 
                 <div className="relative">
                   <CalendarDays className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                    name="date"
                     className="pl-11 dark:bg-background input-glow transition-all"
                     type="date"
-                    defaultValue={today}
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
                     required
                     max={today}
                     aria-label={`${transactionType} date`}
@@ -208,11 +222,12 @@ export function AddTransactionScreen({ onNavigate, onSave, type: initialType }: 
                 <div className="relative">
                   <FileText className="pointer-events-none absolute left-4 top-3 size-4 text-muted-foreground" />
                   <Textarea
-                    name="notes"
-                    placeholder="Optional note"
+                    placeholder="e.g. Dinner with friends…"
                     maxLength={500}
                     aria-label="Optional notes"
                     className="dark:bg-background pl-11 input-glow transition-all"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
                     onFocus={() => setFocusedField("notes")}
                     onBlur={() => setFocusedField(null)}
                   />
@@ -220,18 +235,32 @@ export function AddTransactionScreen({ onNavigate, onSave, type: initialType }: 
               </Field>
             </motion.div>
 
+            {error && (
+              <motion.p
+                id="form-error"
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-sm text-red-500 font-medium text-center"
+                role="alert"
+                aria-live="assertive"
+              >
+                {error}
+              </motion.p>
+            )}
+
             <motion.div variants={itemVariants}>
               <motion.button
                 type="submit"
                 disabled={isSaving}
                 whileTap={{ scale: isSaving ? 1 : 0.98 }}
                 className={cn(
-                  "h-[52px] w-full rounded-2xl font-extrabold text-base flex items-center justify-center gap-2 text-white shadow-lg transition-all",
-                  transactionType === "expense"
-                    ? "bg-gradient-to-br from-[#ff6b5f] to-[#ff995c] shadow-[#ff6b5f]/25 hover:shadow-xl hover:shadow-[#ff6b5f]/30"
-                    : "bg-gradient-to-br from-primary to-[#10b889] shadow-primary/25 hover:shadow-xl hover:shadow-primary/30",
+                  "h-[52px] w-full rounded-2xl font-extrabold text-base flex items-center justify-center gap-2 text-white shadow-lg transition-all cursor-pointer",
+                   transactionType === "expense"
+                     ? "bg-expense hover:bg-expense/90 shadow-level-2"
+                     : "bg-income hover:bg-income/90 shadow-level-2",
                   isSaving && "opacity-70 cursor-wait"
                 )}
+                aria-disabled={isSaving}
               >
                 {isSaving ? (
                   <motion.div
@@ -251,7 +280,7 @@ export function AddTransactionScreen({ onNavigate, onSave, type: initialType }: 
         </CardContent>
       </Card>
 
-      <BottomNav active="Add" onNavigate={onNavigate} />
+      
     </PhoneFrame>
   );
 }

@@ -33,10 +33,10 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/theme-provider";
-import { PhoneFrame, Field, ModalOverlay, ModalContent } from "@/components/shared";
+import { PhoneFrame, Field, ModalOverlay, ModalContent, BrandMark } from "@/components/shared";
 
 interface SignUpScreenProps {
-  onSignUp: (email: string, name: string) => void;
+  onSignUp: (email: string, name: string, password: string) => void;
   onLogin: () => void;
 }
 
@@ -133,7 +133,7 @@ export function SignUpScreen({ onSignUp, onLogin }: SignUpScreenProps) {
     setIsLoading(true);
     await new Promise((resolve) => setTimeout(resolve, 1500));
     setIsLoading(false);
-    onSignUp(email, name);
+    onSignUp(email, name, password);
   };
 
   const containerVariants = {
@@ -150,451 +150,424 @@ export function SignUpScreen({ onSignUp, onLogin }: SignUpScreenProps) {
   };
 
   return (
-    <PhoneFrame label="Sign up screen">
-      <div className="flex justify-between items-center">
+    <div className="w-full flex flex-col justify-center items-center bg-ds-canvas relative py-6">
+      {/* Floating Header Actions */}
+      <div className="absolute -top-4 right-0 flex items-center gap-3 z-20">
         <motion.button
-          whileHover={{ scale: 1.08, x: -3 }}
-          whileTap={{ scale: 0.92 }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
           onClick={onLogin}
-          className="p-2.5 rounded-2xl bg-muted/50 hover:bg-muted border border-border/50 dark:border-white/10 transition-all flex items-center gap-1.5"
-          aria-label="Go back to login"
+          className="p-3 rounded-2xl bg-white/95 dark:bg-white/5 backdrop-blur-md shadow-lg border border-border/40 hover:shadow-xl transition-all text-xs font-bold flex items-center gap-1.5"
+          aria-label="Go to Sign In"
         >
           <ArrowLeft className="size-4" />
+          <span>Sign In</span>
         </motion.button>
-
-        <motion.div
-          initial={{ opacity: 0, y: -12 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center flex-1"
-        >
-          <p className="text-[0.65rem] font-black uppercase tracking-[0.15em] text-primary">
-            Get Started
-          </p>
-          <h2 className="text-xl font-extrabold leading-tight">
-            Create Account
-          </h2>
-        </motion.div>
-
+        
         <motion.button
-          whileHover={{ scale: 1.08 }}
-          whileTap={{ scale: 0.92 }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
           onClick={toggleTheme}
-          className="p-2.5 rounded-2xl bg-muted/50 hover:bg-muted border border-border/50 dark:border-white/10 transition-all"
-          aria-label="Toggle dark mode"
+          className="p-3 rounded-2xl bg-white/95 dark:bg-white/5 backdrop-blur-md shadow-lg border border-border/40 hover:shadow-xl transition-all"
+          aria-label="Toggle theme"
         >
-          {isDark ? <Sun className="size-5 text-yellow-500" /> : <Moon className="size-5 text-primary" />}
+          {isDark ? <Sun className="size-5 text-amber-400" /> : <Moon className="size-5 text-indigo-500" />}
         </motion.button>
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-      >
-        <div className="overflow-y-auto no-scrollbar smooth-scroll max-h-[70vh]">
-          <Card className="mt-9 border-border/80 bg-white/85 shadow-soft dark:bg-card dark:border dark:border-white/5 dark:shadow-xl dark:shadow-black/30">
-            <CardContent className="grid gap-5 p-5 pb-8">
-              <form onSubmit={handleSubmit}>
-                <motion.div
-                  variants={containerVariants}
-                  initial="hidden"
-                  animate="visible"
-                  className="grid gap-5"
-                >
-                  <motion.div variants={itemVariants}>
-                    <Field label="Full Name">
-                      <div className="relative">
-                        <UserRound className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                          className="pl-11 dark:bg-background transition-all focus:ring-2 focus:ring-primary/50 input-glow"
-                          placeholder="Enter your full name"
-                          type="text"
-                          required
-                          autoComplete="name"
-                          aria-label="Full name"
-                          value={name}
-                          onChange={(e) => setName(e.target.value)}
-                          onFocus={() => setFocusedField("name")}
-                          onBlur={() => setFocusedField(null)}
-                        />
-                        <AnimatePresence>
-                          {focusedField === "name" && (
-                            <motion.div
-                              initial={{ opacity: 0, scaleX: 0 }}
-                              animate={{ opacity: 1, scaleX: 1 }}
-                              exit={{ opacity: 0, scaleX: 0 }}
-                              className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary to-secondary origin-left"
-                            />
-                          )}
-                        </AnimatePresence>
-                      </div>
-                    </Field>
-                  </motion.div>
+      <div className="w-full max-w-md space-y-6">
+        {/* Centered Header */}
+        <div className="text-center space-y-3 mb-2">
+          <div className="flex justify-center">
+            <BrandMark />
+          </div>
+          <h1 className="text-3xl font-black bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent">
+            Create Account
+          </h1>
+          <p className="text-xs font-bold text-muted-foreground">Get started with SpendsTracks</p>
+        </div>
 
-                  <motion.div variants={itemVariants}>
-                    <Field label="Email">
-                      <div className="relative">
-                        <Mail className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                          className={cn(
-                            "pl-11 dark:bg-background transition-all focus:ring-2 focus:ring-primary/50 input-glow",
-                            emailError && "border-red-500 focus:ring-red-500"
-                          )}
-                          placeholder="you@example.com"
-                          type="email"
-                          required
-                          autoComplete="email"
-                          aria-label="Email address"
-                          value={email}
-                          onChange={(e) => {
-                            setEmail(e.target.value);
-                            if (emailError) setEmailError("");
-                          }}
-                          onFocus={() => setFocusedField("email")}
-                          onBlur={() => setFocusedField(null)}
-                        />
-                        <AnimatePresence>
+        <Card className="border border-border/40 bg-white/90 dark:bg-card/95 backdrop-blur-2xl shadow-2xl rounded-[1.75rem] overflow-hidden w-full relative">
+          <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary via-secondary to-primary" />
+
+          <CardContent className="p-6 pt-8">
+            <form onSubmit={handleSubmit} className="grid gap-4">
+                  <motion.div
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className="grid gap-4"
+                  >
+                    <motion.div variants={itemVariants}>
+                      <Field label="Full Name" htmlFor="name" required>
+                        <div className="relative">
+                          <UserRound className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                          <Input
+                            id="name"
+                            name="name"
+                            className="pl-11 dark:bg-background transition-all focus:ring-2 focus:ring-primary/50 input-glow"
+                            placeholder="e.g., John Doe…"
+                            type="text"
+                            required
+                            autoComplete="name"
+                            aria-label="Full name"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            onFocus={() => setFocusedField("name")}
+                            onBlur={() => setFocusedField(null)}
+                          />
+                        </div>
+                      </Field>
+                    </motion.div>
+
+                    <motion.div variants={itemVariants}>
+                      <Field label="Email Address" htmlFor="email" required>
+                        <div className="relative">
+                          <Mail className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                          <Input
+                            id="email"
+                            name="email"
+                            className={cn(
+                              "pl-11 dark:bg-background transition-all focus:ring-2 focus:ring-primary/50 input-glow",
+                              emailError && "border-red-500 focus:ring-red-500"
+                            )}
+                            placeholder="e.g., name@example.com…"
+                            type="email"
+                            required
+                            spellCheck={false}
+                            autoComplete="email"
+                            aria-label="Email address"
+                            value={email}
+                            onChange={(e) => {
+                              setEmail(e.target.value);
+                              if (emailError) setEmailError("");
+                            }}
+                            onFocus={() => setFocusedField("email")}
+                            onBlur={() => setFocusedField(null)}
+                          />
                           {email && !emailError && (
-                            <motion.div
-                              initial={{ scale: 0 }}
-                              animate={{ scale: 1 }}
-                              className="absolute right-3 top-1/2 -translate-y-1/2"
-                            >
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2">
                               <Check className="size-4 text-green-500" />
-                            </motion.div>
+                            </div>
                           )}
-                        </AnimatePresence>
-                      </div>
-                      <AnimatePresence>
+                        </div>
                         {emailError && (
-                          <motion.p
-                            initial={{ opacity: 0, y: -8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -8 }}
-                            className="text-xs text-red-500 mt-1 font-medium"
-                          >
+                          <p className="text-xs text-red-500 mt-1 font-medium">
                             {emailError}
-                          </motion.p>
+                          </p>
                         )}
-                      </AnimatePresence>
-                    </Field>
+                      </Field>
+                    </motion.div>
+
+                    <motion.div variants={itemVariants}>
+                      <Field label="Phone Number (Optional)" htmlFor="phone">
+                        <div className="relative">
+                          <Smartphone className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                          <Input
+                            id="phone"
+                            name="phone"
+                            className="pl-11 dark:bg-background transition-all focus:ring-2 focus:ring-primary/50 input-glow"
+                            placeholder="e.g., 9876543210…"
+                            type="tel"
+                            autoComplete="tel"
+                            aria-label="Phone number"
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value)}
+                            onFocus={() => setFocusedField("phone")}
+                            onBlur={() => setFocusedField(null)}
+                          />
+                        </div>
+                      </Field>
+                    </motion.div>
+
+                    <motion.div variants={itemVariants}>
+                      <Field label="Password" htmlFor="password" required>
+                        <div className="relative">
+                          <LockKeyhole className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                          <Input
+                            id="password"
+                            name="password"
+                            className="pl-11 pr-11 dark:bg-background transition-all focus:ring-2 focus:ring-primary/50 input-glow"
+                            placeholder="Create a strong password…"
+                            type={showPassword ? "text" : "password"}
+                            required
+                            autoComplete="new-password"
+                            aria-label="Password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            onFocus={() => setFocusedField("password")}
+                            onBlur={() => setFocusedField(null)}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
+                            aria-label={showPassword ? "Hide password" : "Show password"}
+                          >
+                            {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                          </button>
+                        </div>
+                        {password && (
+                          <div className="mt-2 space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-bold text-muted-foreground">Password strength</span>
+                              <span
+                                className={cn(
+                                  "text-[10px] font-black",
+                                  pwdStrength.level === "Weak"
+                                    ? "text-red-500"
+                                    : pwdStrength.level === "Fair"
+                                    ? "text-yellow-500"
+                                    : pwdStrength.level === "Good"
+                                    ? "text-blue-500"
+                                    : "text-green-500"
+                                )}
+                              >
+                                {pwdStrength.level}
+                              </span>
+                            </div>
+                            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                              <motion.div
+                                className={cn("h-full rounded-full", pwdStrength.color)}
+                                initial={{ width: 0 }}
+                                animate={{ width: pwdStrength.width }}
+                                transition={{ duration: 0.3 }}
+                              />
+                            </div>
+                            <div className="flex flex-wrap gap-1.5 pt-0.5">
+                              {[
+                                { label: "8+ chars", met: pwdStrength.requirements.minLength },
+                                { label: "Uppercase", met: pwdStrength.requirements.uppercase },
+                                { label: "Lowercase", met: pwdStrength.requirements.lowercase },
+                                { label: "Number", met: pwdStrength.requirements.number },
+                              ].map((req) => (
+                                <span
+                                  key={req.label}
+                                  className={cn(
+                                    "text-[9px] font-bold px-2 py-0.5 rounded-full transition-all",
+                                    req.met ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-muted text-muted-foreground"
+                                  )}
+                                >
+                                  {req.label}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </Field>
+                    </motion.div>
+
+                    <motion.div variants={itemVariants}>
+                      <Field label="Confirm Password" htmlFor="confirmPassword" required>
+                        <div className="relative">
+                          <LockKeyhole className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                          <Input
+                            id="confirmPassword"
+                            name="confirmPassword"
+                            className="pl-11 dark:bg-background transition-all focus:ring-2 focus:ring-primary/50 input-glow"
+                            placeholder="Confirm your password…"
+                            type={showPassword ? "text" : "password"}
+                            required
+                            autoComplete="new-password"
+                            aria-label="Confirm password"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            onFocus={() => setFocusedField("confirmPassword")}
+                            onBlur={() => setFocusedField(null)}
+                          />
+                        </div>
+                      </Field>
+                    </motion.div>
+
+                    {passwordError && (
+                      <p className="text-xs text-red-500 font-medium">
+                        {passwordError}
+                      </p>
+                    )}
                   </motion.div>
 
-                  <motion.div variants={itemVariants}>
-                    <Field label="Phone Number (Optional)">
-                      <div className="relative">
-                        <Smartphone className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                          className="pl-11 dark:bg-background transition-all focus:ring-2 focus:ring-primary/50 input-glow"
-                          placeholder="+91 98765 43210"
-                          type="tel"
-                          autoComplete="tel"
-                          aria-label="Phone number"
-                          value={phone}
-                          onChange={(e) => setPhone(e.target.value)}
-                          onFocus={() => setFocusedField("phone")}
-                          onBlur={() => setFocusedField(null)}
-                        />
-                      </div>
-                    </Field>
-                  </motion.div>
+                  {/* Additional options panel */}
+                  <div className="mt-2 p-3 bg-muted/40 dark:bg-muted/15 rounded-2xl">
+                    <button
+                      type="button"
+                      onClick={() => setShowAdvanced(!showAdvanced)}
+                      className="flex items-center justify-between w-full text-left"
+                    >
+                      <span className="text-xs font-black uppercase tracking-wider text-muted-foreground">Additional Options</span>
+                      <motion.div animate={{ rotate: showAdvanced ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                        <ChevronDown className="size-4 text-muted-foreground" />
+                      </motion.div>
+                    </button>
 
-                  <motion.div variants={itemVariants}>
-                    <Field label="Password">
-                      <div className="relative">
-                        <LockKeyhole className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                          className="pl-11 pr-11 dark:bg-background transition-all focus:ring-2 focus:ring-primary/50 input-glow"
-                          placeholder="Create a password"
-                          type={showPassword ? "text" : "password"}
-                          required
-                          autoComplete="new-password"
-                          aria-label="Password"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          onFocus={() => setFocusedField("password")}
-                          onBlur={() => setFocusedField(null)}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
-                          aria-label={showPassword ? "Hide password" : "Show password"}
-                        >
-                          {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                        </button>
-                      </div>
-                      {password && (
+                    <AnimatePresence>
+                      {showAdvanced && (
                         <motion.div
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: "auto" }}
-                          className="mt-2"
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.25 }}
+                          className="mt-3 space-y-3"
                         >
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs font-medium text-muted-foreground">Password strength</span>
-                            <span
-                              className={cn(
-                                "text-xs font-bold",
-                                pwdStrength.level === "Weak"
-                                  ? "text-red-500"
-                                  : pwdStrength.level === "Fair"
-                                  ? "text-yellow-500"
-                                  : pwdStrength.level === "Good"
-                                  ? "text-blue-500"
-                                  : "text-green-500"
-                              )}
-                            >
-                              {pwdStrength.level}
-                            </span>
+                          <div className="grid grid-cols-2 gap-3">
+                            <Field label="Country" htmlFor="country">
+                              <Select value={country} onValueChange={setCountry}>
+                                <SelectTrigger id="country" className="dark:bg-background h-10 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="India">India</SelectItem>
+                                  <SelectItem value="USA">USA</SelectItem>
+                                  <SelectItem value="UK">UK</SelectItem>
+                                  <SelectItem value="Canada">Canada</SelectItem>
+                                  <SelectItem value="Australia">Australia</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </Field>
+                            <Field label="Currency" htmlFor="currency">
+                              <Select value={currency} onValueChange={setCurrency}>
+                                <SelectTrigger id="currency" className="dark:bg-background h-10 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="INR">₹ INR</SelectItem>
+                                  <SelectItem value="USD">$ USD</SelectItem>
+                                  <SelectItem value="EUR">€ EUR</SelectItem>
+                                  <SelectItem value="GBP">£ GBP</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </Field>
                           </div>
-                          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                            <motion.div
-                              className={cn("h-full rounded-full", pwdStrength.color)}
-                              initial={{ width: 0 }}
-                              animate={{ width: pwdStrength.width }}
-                              transition={{ duration: 0.3 }}
+
+                          <Field label="Initial Monthly Budget" htmlFor="monthlyBudget">
+                            <Input
+                              id="monthlyBudget"
+                              name="monthlyBudget"
+                              type="number"
+                              value={monthlyBudget}
+                              onChange={(e) => setMonthlyBudget(e.target.value)}
+                              className="dark:bg-background h-10 input-glow"
+                              placeholder="e.g., 50000…"
                             />
+                          </Field>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <Field label="Theme" htmlFor="preferredTheme">
+                              <Select value={preferredTheme} onValueChange={setPreferredTheme}>
+                                <SelectTrigger id="preferredTheme" className="dark:bg-background h-10 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="system">System</SelectItem>
+                                  <SelectItem value="light">Light</SelectItem>
+                                  <SelectItem value="dark">Dark</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </Field>
+                            <Field label="Language" htmlFor="language">
+                              <Select value={language} onValueChange={setLanguage}>
+                                <SelectTrigger id="language" className="dark:bg-background h-10 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="English">English</SelectItem>
+                                  <SelectItem value="Hindi">Hindi</SelectItem>
+                                  <SelectItem value="Spanish">Spanish</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </Field>
                           </div>
-                          <div className="mt-2 flex flex-wrap gap-2">
-                            {[
-                              { label: "8+ chars", met: pwdStrength.requirements.minLength },
-                              { label: "Uppercase", met: pwdStrength.requirements.uppercase },
-                              { label: "Lowercase", met: pwdStrength.requirements.lowercase },
-                              { label: "Number", met: pwdStrength.requirements.number },
-                            ].map((req) => (
-                              <motion.span
-                                key={req.label}
-                                className={cn(
-                                  "text-[10px] px-2 py-0.5 rounded-full transition-all",
-                                  req.met ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-muted text-muted-foreground"
-                                )}
-                                animate={{ scale: req.met ? [0.9, 1.05, 1] : 1 }}
-                                transition={{ duration: 0.3 }}
-                              >
-                                {req.label}
-                              </motion.span>
-                            ))}
-                          </div>
+
+                          <label className="flex items-center justify-between cursor-pointer py-1">
+                            <span className="text-xs font-semibold text-muted-foreground">Enable Notifications</span>
+                            <Switch checked={notifications} onCheckedChange={setNotifications} />
+                          </label>
                         </motion.div>
                       )}
-                    </Field>
-                  </motion.div>
+                    </AnimatePresence>
+                  </div>
 
-                  <motion.div variants={itemVariants}>
-                    <Field label="Confirm Password">
-                      <div className="relative">
-                        <LockKeyhole className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                          className="pl-11 dark:bg-background transition-all focus:ring-2 focus:ring-primary/50 input-glow"
-                          placeholder="Confirm your password"
-                          type={showPassword ? "text" : "password"}
-                          required
-                          autoComplete="new-password"
-                          aria-label="Confirm password"
-                          value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
-                          onFocus={() => setFocusedField("confirmPassword")}
-                          onBlur={() => setFocusedField(null)}
+                  {/* Age verification */}
+                  <div className="mt-1">
+                    <label htmlFor="ageVerified" className="flex items-start gap-3 cursor-pointer group">
+                      <div className="relative mt-0.5">
+                        <input
+                          id="ageVerified"
+                          type="checkbox"
+                          checked={ageVerified}
+                          onChange={(e) => setAgeVerified(e.target.checked)}
+                          className="sr-only"
                         />
+                        <motion.div
+                          className={cn(
+                            "w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-200",
+                            "group-focus-within:ring-2 group-focus-within:ring-primary/50 group-focus-within:ring-offset-2 dark:group-focus-within:ring-offset-ds-canvas",
+                            ageVerified ? "bg-green-500 border-green-500" : "border-muted-foreground/50 group-hover:border-primary"
+                          )}
+                          whileTap={{ scale: 0.9 }}
+                        >
+                          {ageVerified && (
+                            <Check className="size-3 text-white" />
+                          )}
+                        </motion.div>
                       </div>
-                    </Field>
-                  </motion.div>
+                      <div className="text-xs">
+                        <span className="text-muted-foreground font-semibold">I am 18 years or older</span>
+                        <p className="text-muted-foreground/60 text-[9px] leading-tight">Required for account creation</p>
+                      </div>
+                    </label>
+                  </div>
 
-                  <AnimatePresence>
-                    {passwordError && (
-                      <motion.p
-                        initial={{ opacity: 0, y: -8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -8 }}
-                        className="text-xs text-red-500 font-medium"
-                      >
-                        {passwordError}
-                      </motion.p>
-                    )}
-                  </AnimatePresence>
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  className="mb-4 p-4 bg-muted/30 dark:bg-muted/20 rounded-2xl"
-                >
-                  <button
-                    type="button"
-                    onClick={() => setShowAdvanced(!showAdvanced)}
-                    className="flex items-center justify-between w-full text-left"
-                  >
-                    <span className="text-sm font-bold">Additional Options</span>
-                    <motion.div animate={{ rotate: showAdvanced ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                      <ChevronDown className="size-4 text-muted-foreground" />
-                    </motion.div>
-                  </button>
-
-                  <AnimatePresence>
-                    {showAdvanced && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.25 }}
-                        className="mt-4 space-y-4"
-                      >
-                        <div className="grid grid-cols-2 gap-3">
-                          <Field label="Country">
-                            <Select value={country} onValueChange={setCountry}>
-                              <SelectTrigger className="dark:bg-background">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="India">India</SelectItem>
-                                <SelectItem value="USA">USA</SelectItem>
-                                <SelectItem value="UK">UK</SelectItem>
-                                <SelectItem value="Canada">Canada</SelectItem>
-                                <SelectItem value="Australia">Australia</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </Field>
-                          <Field label="Currency">
-                            <Select value={currency} onValueChange={setCurrency}>
-                              <SelectTrigger className="dark:bg-background">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="INR">₹ INR</SelectItem>
-                                <SelectItem value="USD">$ USD</SelectItem>
-                                <SelectItem value="EUR">€ EUR</SelectItem>
-                                <SelectItem value="GBP">£ GBP</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </Field>
-                        </div>
-
-                        <Field label="Initial Monthly Budget">
-                          <Input
-                            type="number"
-                            value={monthlyBudget}
-                            onChange={(e) => setMonthlyBudget(e.target.value)}
-                            className="dark:bg-background input-glow"
-                            placeholder="50000"
-                          />
-                        </Field>
-
-                        <div className="grid grid-cols-2 gap-3">
-                          <Field label="Theme">
-                            <Select value={preferredTheme} onValueChange={setPreferredTheme}>
-                              <SelectTrigger className="dark:bg-background">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="system">System</SelectItem>
-                                <SelectItem value="light">Light</SelectItem>
-                                <SelectItem value="dark">Dark</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </Field>
-                          <Field label="Language">
-                            <Select value={language} onValueChange={setLanguage}>
-                              <SelectTrigger className="dark:bg-background">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="English">English</SelectItem>
-                                <SelectItem value="Hindi">Hindi</SelectItem>
-                                <SelectItem value="Spanish">Spanish</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </Field>
-                        </div>
-
-                        <label className="flex items-center justify-between cursor-pointer">
-                          <span className="text-sm font-medium">Enable Notifications</span>
-                          <Switch checked={notifications} onCheckedChange={setNotifications} />
-                        </label>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </motion.div>
-
-                <div className="mb-4">
-                  <label className="flex items-start gap-3 cursor-pointer group">
-                    <div className="relative mt-0.5">
-                      <input
-                        type="checkbox"
-                        checked={ageVerified}
-                        onChange={(e) => setAgeVerified(e.target.checked)}
-                        className="sr-only"
-                      />
-                      <motion.div
-                        className={cn(
-                          "w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all",
-                          ageVerified ? "bg-green-500 border-green-500" : "border-muted-foreground group-hover:border-primary"
-                        )}
-                        whileTap={{ scale: 0.9 }}
-                      >
-                        {ageVerified && (
-                          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
+                  {/* Terms acceptance checkbox */}
+                  <div>
+                    <label htmlFor="agreedToTerms" className="flex items-start gap-3 cursor-pointer group">
+                      <div className="relative mt-0.5">
+                        <input
+                          id="agreedToTerms"
+                          type="checkbox"
+                          checked={agreedToTerms}
+                          onChange={(e) => setAgreedToTerms(e.target.checked)}
+                          className="sr-only"
+                        />
+                        <motion.div
+                          className={cn(
+                            "w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-200",
+                            "group-focus-within:ring-2 group-focus-within:ring-primary/50 group-focus-within:ring-offset-2 dark:group-focus-within:ring-offset-ds-canvas",
+                            agreedToTerms ? "bg-primary border-primary" : "border-muted-foreground/50 group-hover:border-primary"
+                          )}
+                          whileTap={{ scale: 0.9 }}
+                        >
+                          {agreedToTerms && (
                             <Check className="size-3 text-white" />
-                          </motion.div>
-                        )}
-                      </motion.div>
-                    </div>
-                    <div className="text-xs">
-                      <span className="text-muted-foreground font-medium">I am 18 years or older</span>
-                      <p className="text-muted-foreground/60 text-[10px]">Required for account creation</p>
-                    </div>
-                  </label>
-                </div>
-
-                <div className="mt-2 mb-4">
-                  <label className="flex items-start gap-3 cursor-pointer group">
-                    <div className="relative mt-0.5">
-                      <input
-                        type="checkbox"
-                        checked={agreedToTerms}
-                        onChange={(e) => setAgreedToTerms(e.target.checked)}
-                        className="sr-only"
-                      />
-                      <motion.div
-                        className={cn(
-                          "w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all",
-                          agreedToTerms ? "bg-primary border-primary" : "border-muted-foreground group-hover:border-primary"
-                        )}
-                        whileTap={{ scale: 0.9 }}
-                      >
-                        {agreedToTerms && (
-                          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ duration: 0.2 }}>
-                            <Check className="size-3 text-white" />
-                          </motion.div>
-                        )}
-                      </motion.div>
-                    </div>
-                    <div className="text-xs">
-                      <span className="text-muted-foreground font-medium">I agree to the </span>
-                      <button
-                        type="button"
-                        className="text-primary font-extrabold hover:underline"
-                        onClick={() => setShowTermsModal(true)}
-                      >
-                        Terms & Conditions
-                      </button>
-                      <span className="text-muted-foreground font-medium"> and </span>
-                      <button
-                        type="button"
-                        className="text-primary font-extrabold hover:underline"
-                        onClick={() => setShowTermsModal(true)}
-                      >
-                        Privacy Policy
-                      </button>
-                    </div>
-                  </label>
-                </div>
+                          )}
+                        </motion.div>
+                      </div>
+                      <div className="text-xs">
+                        <span className="text-muted-foreground font-semibold">I agree to the </span>
+                        <button
+                          type="button"
+                          className="text-primary font-extrabold hover:underline inline-block"
+                          onClick={() => setShowTermsModal(true)}
+                        >
+                          Terms & Conditions
+                        </button>
+                        <span className="text-muted-foreground font-semibold"> and </span>
+                        <button
+                          type="button"
+                          className="text-primary font-extrabold hover:underline inline-block"
+                          onClick={() => setShowTermsModal(true)}
+                        >
+                          Privacy Policy
+                        </button>
+                      </div>
+                    </label>
+                  </div>
 
                 <motion.button
                   type="submit"
                   disabled={isLoading}
-                  className="mt-4 h-[52px] w-full bg-gradient-to-br from-primary to-[#10b889] rounded-2xl font-extrabold text-white shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 animate-shimmer"
-                  whileHover={{ scale: isLoading ? 1 : 1.02 }}
-                  whileTap={{ scale: isLoading ? 1 : 0.98 }}
+                  className="mt-3 h-13 w-full bg-primary rounded-2xl font-extrabold text-white shadow-level-2 hover:bg-primary/90 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  whileHover={{ scale: isLoading ? 1 : 1.01 }}
+                  whileTap={{ scale: isLoading ? 1 : 0.99 }}
                 >
                   {isLoading ? (
                     <motion.div
@@ -605,29 +578,23 @@ export function SignUpScreen({ onSignUp, onLogin }: SignUpScreenProps) {
                   ) : (
                     <>
                       <UserPlus className="size-5" />
-                      Create Account
+                      <span>Create Account</span>
                     </>
                   )}
                 </motion.button>
               </form>
             </CardContent>
           </Card>
-        </div>
-      </motion.div>
 
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-        className="mt-auto pb-2 text-center"
-      >
-        <p className="text-sm font-semibold text-muted-foreground">
-          Already have an account?{" "}
-          <button type="button" className="font-extrabold text-primary hover:underline" onClick={onLogin}>
-            Sign In
-          </button>
-        </p>
-      </motion.div>
+          <div className="space-y-4 pt-1">
+            <p className="text-sm font-semibold text-center text-muted-foreground">
+              Already have an account?{" "}
+              <button type="button" className="font-extrabold text-primary hover:underline" onClick={onLogin}>
+                Sign In
+              </button>
+            </p>
+          </div>
+        </div>
 
       <AnimatePresence>
         {toast && (
@@ -790,6 +757,6 @@ export function SignUpScreen({ onSignUp, onLogin }: SignUpScreenProps) {
           </ModalContent>
         </ModalOverlay>
       )}
-    </PhoneFrame>
+    </div>
   );
 }
