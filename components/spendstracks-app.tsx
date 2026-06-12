@@ -239,6 +239,7 @@ export function SpendsTracksApp() {
             transactions={transactions}
             transactionHistory={transactionHistory}
             customCategories={customCategories}
+            onUpdateProfile={handleUpdateProfile}
           />
         );
       case "ask-ai":
